@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Interaction Note</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+<div class="auth-shell">
+
+  <div class="auth-side">
+    <div class="auth-side-brand">
+      <div class="brand-mark">℞</div>
+      Interaction Note
+    </div>
+
+    <div class="auth-side-content">
+      <div class="stamp-quote">Know what's in the bag <em>before</em> it leaves the counter.</div>
+      <div class="auth-side-stats">
+        <div>
+          <div class="stat-num">40+</div>
+          <div class="stat-label">medicines in this checker's dataset</div>
+        </div>
+        <div>
+          <div class="stat-num">25+</div>
+          <div class="stat-label">documented interaction pairs checked</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-side-note">
+      Built as a portfolio project. Accounts and data on this demo live only in your browser — nothing is sent to a server.
+    </div>
+  </div>
+
+  <div class="auth-main">
+    <div class="auth-card">
+      <div class="brand-mobile"><div class="brand-mark">℞</div>Interaction Note</div>
+
+      <h1>Welcome back</h1>
+      <p class="sub">Sign in to check your medicines and see your check history.</p>
+
+      <form id="loginForm" novalidate>
+        <div class="field" id="emailField">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+          <div class="field-error" id="emailError"></div>
+        </div>
+
+        <div class="field" id="passwordField">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" name="password" placeholder="Your password" autocomplete="current-password">
+            <button type="button" class="input-toggle" id="togglePassword">Show</button>
+          </div>
+          <div class="field-error" id="passwordError"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">Sign in</span>
+        </button>
+
+        <div class="demo-note">
+          <strong>No account yet?</strong>
+          Create one in a few seconds — no email verification needed for this demo.
+        </div>
+      </form>
+
+      <div class="auth-footer-link">
+        Don't have an account? <a href="signup.html">Create one</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/toast.js"></script>
+<script>
+  redirectIfAuthed();
+
+  const form = document.getElementById('loginForm');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const submitBtn = document.getElementById('submitBtn');
+  const toggleBtn = document.getElementById('togglePassword');
+
+  toggleBtn.addEventListener('click', () => {
+    const isPw = passwordInput.type === 'password';
+    passwordInput.type = isPw ? 'text' : 'password';
+    toggleBtn.textContent = isPw ? 'Hide' : 'Show';
+  });
+
+  function clearErrors(){
+    ['email','password'].forEach(f => {
+      document.getElementById(f+'Field').classList.remove('has-error');
+      const err = document.getElementById(f+'Error');
+      err.classList.remove('show');
+      err.textContent = '';
+    });
+  }
+  function showError(field, message){
+    document.getElementById(field+'Field').classList.add('has-error');
+    const err = document.getElementById(field+'Error');
+    err.textContent = message;
+    err.classList.add('show');
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearErrors();
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+      const result = login({ email: emailInput.value, password: passwordInput.value });
+
+      if(result.ok){
+        toast('Signed in — welcome back!', 'success');
+        setTimeout(() => window.location.href = 'index.html', 400);
+      } else {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+        showError(result.field, result.message);
+        document.getElementById(result.field)?.focus();
+      }
+    }, 350);
+  });
+</script>
+</body>
+</html>

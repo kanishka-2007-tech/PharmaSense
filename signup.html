@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create account — Interaction Note</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+<div class="auth-shell">
+
+  <div class="auth-side">
+    <div class="auth-side-brand">
+      <div class="brand-mark">℞</div>
+      Interaction Note
+    </div>
+
+    <div class="auth-side-content">
+      <div class="stamp-quote">Every prescription is a <em>combination</em>, not just a list.</div>
+      <div class="auth-side-stats">
+        <div>
+          <div class="stat-num">40+</div>
+          <div class="stat-label">medicines in this checker's dataset</div>
+        </div>
+        <div>
+          <div class="stat-num">25+</div>
+          <div class="stat-label">documented interaction pairs checked</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-side-note">
+      Built as a portfolio project. Accounts and data on this demo live only in your browser — nothing is sent to a server.
+    </div>
+  </div>
+
+  <div class="auth-main">
+    <div class="auth-card">
+      <div class="brand-mobile"><div class="brand-mark">℞</div>Interaction Note</div>
+
+      <h1>Create your account</h1>
+      <p class="sub">Sign up to start checking medicine combinations and keep a history of your checks.</p>
+
+      <form id="signupForm" novalidate>
+        <div class="field" id="nameField">
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name" placeholder="e.g. Aditi Sharma" autocomplete="name">
+          <div class="field-error" id="nameError"></div>
+        </div>
+
+        <div class="field" id="emailField">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+          <div class="field-error" id="emailError"></div>
+        </div>
+
+        <div class="field" id="passwordField">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password">
+            <button type="button" class="input-toggle" id="togglePassword">Show</button>
+          </div>
+          <div class="strength-meter">
+            <div class="strength-bar" id="bar1"></div>
+            <div class="strength-bar" id="bar2"></div>
+            <div class="strength-bar" id="bar3"></div>
+          </div>
+          <div class="strength-label" id="strengthLabel">&nbsp;</div>
+          <div class="field-error" id="passwordError"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">Create account</span>
+        </button>
+
+        <div class="demo-note">
+          <strong>Demo project notice</strong>
+          This is a portfolio piece — please don't use a real password you use elsewhere.
+        </div>
+      </form>
+
+      <div class="auth-footer-link">
+        Already have an account? <a href="login.html">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/toast.js"></script>
+<script>
+  redirectIfAuthed();
+
+  const form = document.getElementById('signupForm');
+  const nameInput = document.getElementById('name');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const submitBtn = document.getElementById('submitBtn');
+  const toggleBtn = document.getElementById('togglePassword');
+  const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3')];
+  const strengthLabel = document.getElementById('strengthLabel');
+
+  toggleBtn.addEventListener('click', () => {
+    const isPw = passwordInput.type === 'password';
+    passwordInput.type = isPw ? 'text' : 'password';
+    toggleBtn.textContent = isPw ? 'Hide' : 'Show';
+  });
+
+  function strengthOf(pw){
+    let score = 0;
+    if(pw.length >= 8) score++;
+    if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if(/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+    return score; // 0-3
+  }
+  const strengthColors = ['#c9d0c6', '#a83b26', '#9c6b1f', '#2F6E4F'];
+  const strengthWords = ['', 'Weak', 'Okay', 'Strong'];
+  passwordInput.addEventListener('input', () => {
+    const score = strengthOf(passwordInput.value);
+    bars.forEach((bar, i) => {
+      bar.style.background = i < score ? strengthColors[score] : '#e3e7de';
+    });
+    strengthLabel.textContent = passwordInput.value ? strengthWords[score] : '\u00A0';
+  });
+
+  function clearErrors(){
+    ['name','email','password'].forEach(f => {
+      document.getElementById(f+'Field').classList.remove('has-error');
+      const err = document.getElementById(f+'Error');
+      err.classList.remove('show');
+      err.textContent = '';
+    });
+  }
+  function showError(field, message){
+    document.getElementById(field+'Field').classList.add('has-error');
+    const err = document.getElementById(field+'Error');
+    err.textContent = message;
+    err.classList.add('show');
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearErrors();
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+      const result = signup({
+        name: nameInput.value,
+        email: emailInput.value,
+        password: passwordInput.value,
+      });
+
+      if(result.ok){
+        toast('Account created — welcome!', 'success');
+        setTimeout(() => window.location.href = 'index.html', 500);
+      } else {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+        showError(result.field, result.message);
+        document.getElementById(result.field)?.focus();
+      }
+    }, 400);
+  });
+</script>
+</body>
+</html>

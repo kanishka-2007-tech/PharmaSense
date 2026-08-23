@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interaction Note — Medicine Safety Checker</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">
+      <div class="brand-mark">℞</div>
+      <div>
+        Interaction Note
+        <small>Medicine Safety Checker</small>
+      </div>
+    </a>
+    <div class="nav-user">
+      <button class="nav-user-btn" id="navUserBtn">
+        <div class="avatar" id="avatar">--</div>
+      </button>
+      <div class="nav-menu" id="navMenu">
+        <div class="nav-menu-header">
+          <div class="name" id="userName">&nbsp;</div>
+          <div class="email" id="userEmail">&nbsp;</div>
+        </div>
+        <button id="logoutBtn" class="danger-action">Sign out</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="welcome-banner" id="welcomeBanner">
+    <div>
+      <strong>Welcome — here's how it works</strong>
+      Search and add the medicines from a prescription below, then run a check. Findings are color-coded by risk, with a plain-language reason and what to do next.
+    </div>
+    <button class="close-x" id="dismissWelcome" aria-label="Dismiss">&times;</button>
+  </div>
+
+  <header class="page-header">
+    <span class="eyebrow">Interaction Note</span>
+    <h1>Medicine Interaction Checker</h1>
+    <p class="sub">Add the medicines on a prescription and check them against known drug&#8211;drug interactions, in plain language &#8212; not just a "contraindicated" flag.</p>
+  </header>
+
+  <div class="panel">
+    <span class="panel-label">Add medicines</span>
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Start typing a medicine name, e.g. Warfarin, Metformin..." autocomplete="off">
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="checkBtn" disabled>
+        <span class="spinner"></span>
+        <span class="btn-text">Check interactions</span>
+      </button>
+      <button class="link-btn" id="clearBtn">Clear all</button>
+    </div>
+    <p class="empty-hint" id="emptyHint">Add at least two medicines to run a check.</p>
+  </div>
+
+  <div class="results" id="results" style="display:none;">
+    <div class="results-heading">Findings <span class="count" id="resultCount"></span></div>
+    <div id="resultsList"></div>
+  </div>
+
+  <div class="history-panel" id="historyPanel">
+    <span class="panel-label">Recent checks</span>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <footer class="site-footer">
+    <strong>Not medical advice.</strong> This is a portfolio demonstration built on a small curated dataset of well-documented interactions — it does not cover every medicine or every interaction, and it is not a substitute for a pharmacist or doctor. Always confirm with a qualified professional before changing any medication.
+  </footer>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
