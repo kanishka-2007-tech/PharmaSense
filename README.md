@@ -70,7 +70,7 @@ No build step needed — but browsers restrict some features (like
 local server is the safer way to run it:
 
 ```bash
-cd medicine-interaction-checker
+cd PharmaSense
 npx serve .
 # or: python3 -m http.server 5500
 ```
