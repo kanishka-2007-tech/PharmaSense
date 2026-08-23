@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PharmaSense — Medicine Safety Checker</title>
+<title>PharmaSense — Medicine Interaction Checker</title>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,77 +12,185 @@
 </head>
 <body>
 
-<nav class="topnav">
-  <div class="topnav-inner">
-    <a href="index.html" class="brand">
-      <div class="brand-mark">℞</div>
-      <div>
-        PharmaSense
-        <small>Medicine Safety Checker</small>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="index.html" class="sidebar-brand">
+      <div class="brand-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="1.5"/>
+          <text x="14" y="19" text-anchor="middle" font-family="Georgia, serif" font-size="16" font-weight="700" fill="currentColor">&#8478;</text>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">PharmaSense</span>
+        <span class="brand-tag">Medicine Safety</span>
       </div>
     </a>
-    <div class="nav-user">
-      <button class="nav-user-btn" id="navUserBtn">
-        <div class="avatar" id="avatar">--</div>
-      </button>
-      <div class="nav-menu" id="navMenu">
-        <div class="nav-menu-header">
-          <div class="name" id="userName">&nbsp;</div>
-          <div class="email" id="userEmail">&nbsp;</div>
-        </div>
-        <button id="logoutBtn" class="danger-action">Sign out</button>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">&times;</button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item active" data-page="checker">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Interaction Checker</span>
+    </a>
+    <a href="#history-section" class="nav-item" data-page="history">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Check History</span>
+    </a>
+    <a href="#about-section" class="nav-item" data-page="about">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span>About &amp; Help</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-stats">
+    <div class="stats-label">Dataset</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-num" id="statMeds">40+</div>
+        <div class="stat-desc">Medicines</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statInteractions">25+</div>
+        <div class="stat-desc">Interactions</div>
       </div>
     </div>
   </div>
-</nav>
 
-<div class="wrap">
-
-  <div class="welcome-banner" id="welcomeBanner">
-    <div>
-      <strong>Welcome — here's how it works</strong>
-      Search and add the medicines from a prescription below, then run a check. Findings are color-coded by risk, with a plain-language reason and what to do next.
+  <div class="sidebar-recent" id="sidebarRecent">
+    <div class="stats-label">Recent Checks</div>
+    <div class="sidebar-recent-list" id="sidebarRecentList">
+      <div class="sidebar-empty">No checks yet</div>
     </div>
-    <button class="close-x" id="dismissWelcome" aria-label="Dismiss">&times;</button>
   </div>
 
-  <header class="page-header">
-    <span class="eyebrow">PharmaSense</span>
-    <h1>Medicine Interaction Checker</h1>
-    <p class="sub">Add the medicines on a prescription and check them against known drug&#8211;drug interactions, in plain language &#8212; not just a "contraindicated" flag.</p>
+  <div class="sidebar-emergency">
+    <div class="emergency-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div class="emergency-text">
+      <strong>Emergency?</strong>
+      If you suspect a drug reaction, call your local emergency number immediately. This tool is not a substitute for professional medical advice.
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user" id="sidebarUser">
+      <div class="sidebar-avatar" id="sidebarAvatar">--</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarUserName">&nbsp;</div>
+        <div class="sidebar-user-email" id="sidebarUserEmail">&nbsp;</div>
+      </div>
+    </div>
+    <button class="sidebar-logout" id="sidebarLogout">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign out
+    </button>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<main class="main-content">
+  <header class="main-header">
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="header-page-info">
+      <h1 class="header-title">Interaction Checker</h1>
+      <p class="header-sub">Check medicines for known drug interactions</p>
+    </div>
+    <div class="header-actions">
+      <button class="header-icon-btn" id="fontSizeBtn" title="Toggle large text">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </button>
+    </div>
   </header>
 
-  <div class="panel">
-    <span class="panel-label">Add medicines</span>
-    <div class="search-row">
-      <input type="text" id="searchInput" placeholder="Start typing a medicine name, e.g. Warfarin, Metformin..." autocomplete="off">
-      <div class="suggestions" id="suggestions"></div>
+  <div class="content-area">
+
+    <div class="welcome-banner" id="welcomeBanner">
+      <div class="welcome-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </div>
+      <div class="welcome-content">
+        <strong>Welcome to PharmaSense</strong>
+        Search and add medicines from a prescription, then run a check. Findings are color-coded by risk, with a plain-language explanation and what to do next.
+      </div>
+      <button class="welcome-close" id="dismissWelcome" aria-label="Dismiss">&times;</button>
     </div>
-    <div class="chips" id="chips"></div>
-    <div class="actions">
-      <button class="btn btn-primary" id="checkBtn" disabled>
-        <span class="spinner"></span>
-        <span class="btn-text">Check interactions</span>
-      </button>
-      <button class="link-btn" id="clearBtn">Clear all</button>
-    </div>
-    <p class="empty-hint" id="emptyHint">Add at least two medicines to run a check.</p>
-  </div>
 
-  <div class="results" id="results" style="display:none;">
-    <div class="results-heading">Findings <span class="count" id="resultCount"></span></div>
-    <div id="resultsList"></div>
-  </div>
+    <section class="checker-section">
+      <div class="section-header">
+        <h2>Add Medicines</h2>
+        <p>Type a medicine name below and select from the list</p>
+      </div>
 
-  <div class="history-panel" id="historyPanel">
-    <span class="panel-label">Recent checks</span>
-    <div class="history-list" id="historyList"></div>
-  </div>
+      <div class="search-container">
+        <div class="search-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <input type="text" id="searchInput" placeholder="e.g. Warfarin, Metformin, Aspirin..." autocomplete="off" class="search-input">
+        <div class="suggestions" id="suggestions"></div>
+      </div>
 
-  <footer class="site-footer">
-    <strong>Not medical advice.</strong> This is a portfolio demonstration built on a small curated dataset of well-documented interactions — it does not cover every medicine or every interaction, and it is not a substitute for a pharmacist or doctor. Always confirm with a qualified professional before changing any medication.
-  </footer>
-</div>
+      <div class="chips-area" id="chipsArea">
+        <div class="chips-label" id="chipsLabel">Selected medicines</div>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div class="checker-actions">
+        <button class="btn btn-primary btn-lg" id="checkBtn" disabled>
+          <span class="spinner"></span>
+          <span class="btn-text">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Check Interactions
+          </span>
+        </button>
+        <button class="btn btn-ghost" id="clearBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Clear All
+        </button>
+      </div>
+      <p class="empty-hint" id="emptyHint">Add at least two medicines to run a check.</p>
+    </section>
+
+    <section class="results" id="results" style="display:none;">
+      <div class="results-header">
+        <h2>Findings <span class="results-count" id="resultCount"></span></h2>
+      </div>
+      <div id="resultsList"></div>
+    </section>
+
+    <section class="history-section" id="historyPanel">
+      <div class="section-header">
+        <h2>Recent Checks</h2>
+        <p>Your last 8 interaction checks</p>
+      </div>
+      <div class="history-grid" id="historyList"></div>
+    </section>
+
+    <section class="about-section" id="aboutSection">
+      <div class="about-card">
+        <h3>The Problem</h3>
+        <p>In India and globally, a huge number of adverse drug reactions happen because patients — especially elderly ones on multiple medications — don't know which drugs interact badly, or misread doctor handwriting on prescriptions. Pharmacists catch some, but a lot slips through, especially in rural areas with fewer pharmacists per capita.</p>
+      </div>
+      <div class="about-card">
+        <h3>What This Does</h3>
+        <p>PharmaSense checks a list of medicines against known drug-drug interactions and explains <em>why</em> each one matters, in plain language — not just a "contraindicated" flag. It flags duplicate therapy, shows severity stamps, and gives actionable recommendations.</p>
+      </div>
+      <div class="about-card">
+        <h3>Disclaimer</h3>
+        <p>This is a portfolio demonstration built on a small curated dataset. It does not cover every medicine or interaction and is <strong>not a substitute for a pharmacist or doctor</strong>. Always confirm with a qualified professional.</p>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <strong>Not medical advice.</strong> Built as a portfolio project on a curated subset of well-documented interactions. Always confirm with a qualified professional before changing any medication.
+    </footer>
+  </div>
+</main>
 
 <script src="js/auth.js"></script>
 <script src="js/toast.js"></script>

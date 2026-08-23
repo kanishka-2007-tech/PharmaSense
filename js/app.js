@@ -1,45 +1,102 @@
 /* =======================================================
-   Main app logic for index.html (the checker itself)
+   PharmaSense — Main App Logic
    ======================================================= */
 
-const session = requireAuth(); // redirects to login.html if not signed in
+const session = requireAuth();
 
 const state = { added: [] };
 const nameToMed = Object.fromEntries(MEDICINES.map(m => [m.name.toLowerCase(), m]));
 
-// ---------- elements ----------
+// ---------- sidebar elements ----------
+const sidebar = document.getElementById('sidebar');
+const sidebarClose = document.getElementById('sidebarClose');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const hamburger = document.getElementById('hamburger');
+const sidebarAvatar = document.getElementById('sidebarAvatar');
+const sidebarUserName = document.getElementById('sidebarUserName');
+const sidebarUserEmail = document.getElementById('sidebarUserEmail');
+const sidebarLogout = document.getElementById('sidebarLogout');
+const sidebarRecentList = document.getElementById('sidebarRecentList');
+
+// ---------- main elements ----------
 const searchInput = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('suggestions');
 const chipsEl = document.getElementById('chips');
+const chipsArea = document.getElementById('chipsArea');
+const chipsLabel = document.getElementById('chipsLabel');
 const checkBtn = document.getElementById('checkBtn');
 const clearBtn = document.getElementById('clearBtn');
 const emptyHint = document.getElementById('emptyHint');
 const resultsEl = document.getElementById('results');
 const resultsListEl = document.getElementById('resultsList');
 const resultCountEl = document.getElementById('resultCount');
-const navUserBtn = document.getElementById('navUserBtn');
-const navMenu = document.getElementById('navMenu');
-const avatarEl = document.getElementById('avatar');
-const userNameEl = document.getElementById('userName');
-const userEmailEl = document.getElementById('userEmail');
-const logoutBtn = document.getElementById('logoutBtn');
 const welcomeBanner = document.getElementById('welcomeBanner');
 const historyList = document.getElementById('historyList');
 const historyPanel = document.getElementById('historyPanel');
+const fontSizeBtn = document.getElementById('fontSizeBtn');
 
-// ---------- nav / session UI ----------
-avatarEl.textContent = initials(session.name);
-userNameEl.textContent = session.name;
-userEmailEl.textContent = session.email;
+// ---------- sidebar user ----------
+sidebarAvatar.textContent = initials(session.name);
+sidebarUserName.textContent = session.name;
+sidebarUserEmail.textContent = session.email;
 
-navUserBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  navMenu.classList.toggle('open');
+// ---------- sidebar toggle ----------
+function openSidebar(){
+  sidebar.classList.add('open');
+  sidebarOverlay.classList.add('open');
+}
+function closeSidebar(){
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('open');
+}
+hamburger.addEventListener('click', openSidebar);
+sidebarClose.addEventListener('click', closeSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
+
+sidebarLogout.addEventListener('click', () => { logout(); });
+
+// ---------- sidebar nav ----------
+const navItems = document.querySelectorAll('.nav-item');
+const aboutSection = document.getElementById('aboutSection');
+
+navItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    navItems.forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+
+    const page = item.dataset.page;
+    if(page === 'about'){
+      aboutSection.classList.add('visible');
+      document.querySelector('.checker-section').style.display = 'none';
+      resultsEl.style.display = 'none';
+      historyPanel.style.display = 'none';
+    } else if(page === 'history'){
+      aboutSection.classList.remove('visible');
+      document.querySelector('.checker-section').style.display = 'none';
+      resultsEl.style.display = 'none';
+      historyPanel.style.display = 'block';
+    } else {
+      aboutSection.classList.remove('visible');
+      document.querySelector('.checker-section').style.display = 'block';
+      historyPanel.style.display = state.added.length > 0 || getHistory().length > 0 ? 'block' : 'none';
+    }
+    closeSidebar();
+  });
 });
-document.addEventListener('click', () => navMenu.classList.remove('open'));
-logoutBtn.addEventListener('click', () => { logout(); });
 
-// first-login welcome banner (per browser session, not persisted)
+// ---------- font size toggle ----------
+fontSizeBtn.addEventListener('click', () => {
+  document.body.classList.toggle('large-text');
+  const isLarge = document.body.classList.contains('large-text');
+  localStorage.setItem('ps_large_text', isLarge ? '1' : '0');
+  toast(isLarge ? 'Large text enabled' : 'Large text disabled', 'info');
+});
+if(localStorage.getItem('ps_large_text') === '1'){
+  document.body.classList.add('large-text');
+}
+
+// ---------- welcome banner (first login, per session) ----------
 if(!sessionStorage.getItem('ps_welcomed')){
   welcomeBanner.style.display = 'flex';
   sessionStorage.setItem('ps_welcomed', '1');
@@ -65,34 +122,62 @@ function pushHistory(meds, findingsCount, worstSeverity){
 }
 function renderHistory(){
   const hist = getHistory();
+
+  // main history section
   if(hist.length === 0){
-    historyPanel.style.display = 'none';
-    return;
+    historyList.innerHTML = '<div class="history-empty">No checks yet. Add medicines and run a check to see results here.</div>';
+  } else {
+    historyList.innerHTML = hist.map(h => {
+      const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
+      const when = new Date(h.at);
+      const timeStr = when.toLocaleDateString(undefined, {month:'short', day:'numeric'}) + ' · ' +
+        when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+      return `<button class="history-item" data-meds='${JSON.stringify(h.meds)}'>
+        <span class="history-dot ${dot}"></span>
+        <span class="history-text">
+          <span class="history-meds">${h.meds.join(', ')}</span>
+          <span class="history-meta">${timeStr} · ${h.findingsCount ? h.findingsCount + ' finding' + (h.findingsCount>1?'s':'') : 'all clear'}</span>
+        </span>
+      </button>`;
+    }).join('');
   }
-  historyPanel.style.display = 'block';
-  historyList.innerHTML = hist.map(h => {
-    const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
-    const when = new Date(h.at);
-    const timeStr = when.toLocaleDateString(undefined, {month:'short', day:'numeric'}) + ' · ' +
-      when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
-    return `<button class="history-item" data-meds='${JSON.stringify(h.meds)}'>
-      <span class="history-dot ${dot}"></span>
-      <span class="history-text">
-        <span class="history-meds">${h.meds.join(', ')}</span>
-        <span class="history-meta">${timeStr} · ${h.findingsCount ? h.findingsCount + ' finding' + (h.findingsCount>1?'s':'') : 'all clear'}</span>
-      </span>
-    </button>`;
-  }).join('');
+
+  // sidebar recent
+  if(hist.length === 0){
+    sidebarRecentList.innerHTML = '<div class="sidebar-empty">No checks yet</div>';
+  } else {
+    sidebarRecentList.innerHTML = hist.slice(0, 5).map(h => {
+      const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
+      const when = new Date(h.at);
+      const timeStr = when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+      return `<div class="sidebar-recent-item" data-meds='${JSON.stringify(h.meds)}'>
+        <span class="sidebar-recent-dot ${dot}"></span>
+        <span class="sidebar-recent-meds">${h.meds.join(', ')}</span>
+        <span class="sidebar-recent-meta">${timeStr}</span>
+      </div>`;
+    }).join('');
+  }
 }
+
 historyList?.addEventListener('click', (e) => {
   const btn = e.target.closest('.history-item');
   if(!btn) return;
-  const meds = JSON.parse(btn.dataset.meds);
+  loadFromHistory(btn);
+});
+sidebarRecentList?.addEventListener('click', (e) => {
+  const item = e.target.closest('.sidebar-recent-item');
+  if(!item) return;
+  loadFromHistory(item);
+});
+
+function loadFromHistory(el){
+  const meds = JSON.parse(el.dataset.meds);
   state.added = meds.filter(m => nameToMed[m.toLowerCase()]);
   renderChips();
+  document.querySelector('.nav-item[data-page="checker"]').click();
   toast('Loaded from history', 'info');
   window.scrollTo({top: 0, behavior: 'smooth'});
-});
+}
 renderHistory();
 
 // ---------- search / autocomplete ----------
@@ -100,7 +185,7 @@ let activeIndex = -1;
 let currentMatches = [];
 
 function renderSuggestions(query){
-  if(!query){ suggestionsEl.classList.remove('open'); suggestionsEl.innerHTML=''; return; }
+  if(!query){ suggestionsEl.classList.remove('open'); suggestionsEl.innerHTML = ''; return; }
   const q = query.toLowerCase();
   currentMatches = MEDICINES.filter(m =>
     m.name.toLowerCase().includes(q) &&
@@ -145,6 +230,13 @@ function renderChips(){
   emptyHint.textContent = state.added.length === 0
     ? 'Add at least two medicines to run a check.'
     : 'Add one more medicine to run a check.';
+
+  if(state.added.length > 0){
+    chipsArea.classList.add('visible');
+    chipsLabel.textContent = `Selected medicines (${state.added.length})`;
+  } else {
+    chipsArea.classList.remove('visible');
+  }
 }
 
 searchInput.addEventListener('input', e => renderSuggestions(e.target.value));
@@ -154,13 +246,13 @@ searchInput.addEventListener('keydown', e => {
   if(e.key === 'ArrowDown'){
     e.preventDefault();
     activeIndex = Math.min(activeIndex + 1, items.length - 1);
-    items.forEach((el,i)=>el.classList.toggle('active', i===activeIndex));
-    items[activeIndex]?.scrollIntoView({block:'nearest'});
+    items.forEach((el,i) => el.classList.toggle('active', i === activeIndex));
+    items[activeIndex]?.scrollIntoView({block: 'nearest'});
   } else if(e.key === 'ArrowUp'){
     e.preventDefault();
     activeIndex = Math.max(activeIndex - 1, 0);
-    items.forEach((el,i)=>el.classList.toggle('active', i===activeIndex));
-    items[activeIndex]?.scrollIntoView({block:'nearest'});
+    items.forEach((el,i) => el.classList.toggle('active', i === activeIndex));
+    items[activeIndex]?.scrollIntoView({block: 'nearest'});
   } else if(e.key === 'Enter'){
     e.preventDefault();
     if(activeIndex >= 0 && currentMatches[activeIndex]){
@@ -184,7 +276,7 @@ chipsEl.addEventListener('click', e => {
 });
 
 document.addEventListener('click', e => {
-  if(!e.target.closest('.search-row')){ suggestionsEl.classList.remove('open'); }
+  if(!e.target.closest('.search-container')){ suggestionsEl.classList.remove('open'); }
 });
 
 clearBtn.addEventListener('click', () => {
@@ -196,21 +288,21 @@ clearBtn.addEventListener('click', () => {
 // ---------- interaction checking ----------
 function findInteraction(nameA, nameB){
   const a = nameA.toLowerCase(), b = nameB.toLowerCase();
-  return INTERACTIONS.find(x => (x.a===a && x.b===b) || (x.a===b && x.b===a));
+  return INTERACTIONS.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
 }
 function severityLabel(sev){
-  return sev === 'danger' ? 'High risk' : sev === 'caution' ? 'Use caution' : 'Generally safe';
+  return sev === 'danger' ? 'High Risk' : sev === 'caution' ? 'Caution' : 'Safe';
 }
 
 function runCheck(){
   const meds = state.added;
   const findings = [];
 
-  for(let i=0;i<meds.length;i++){
-    for(let j=i+1;j<meds.length;j++){
+  for(let i = 0; i < meds.length; i++){
+    for(let j = i + 1; j < meds.length; j++){
       const hit = findInteraction(meds[i], meds[j]);
       if(hit){
-        findings.push({ pair:[meds[i], meds[j]], severity: hit.severity, text: hit.text, reco: hit.reco, duplicate:false });
+        findings.push({ pair:[meds[i], meds[j]], severity: hit.severity, text: hit.text, reco: hit.reco, duplicate: false });
       }
     }
   }
@@ -225,23 +317,23 @@ function runCheck(){
     if(names.length > 1){
       findings.push({
         pair:[names.join(' + ')],
-        severity:'caution',
-        text:`These are both classified as ${cls}, so taking them together means overlapping effects and higher combined side-effect risk rather than added benefit.`,
-        reco:`Confirm with a doctor whether both are actually needed, or if one duplicates the other.`,
-        duplicate:true
+        severity: 'caution',
+        text: `These are both classified as ${cls}, so taking them together means overlapping effects and higher combined side-effect risk rather than added benefit.`,
+        reco: `Confirm with a doctor whether both are actually needed, or if one duplicates the other.`,
+        duplicate: true
       });
     }
   });
 
-  const order = {danger:0, caution:1, safe:2};
-  findings.sort((a,b)=>order[a.severity]-order[b.severity]);
+  const order = {danger: 0, caution: 1, safe: 2};
+  findings.sort((a, b) => order[a.severity] - order[b.severity]);
   return findings;
 }
 
 function renderResults(findings){
   resultsEl.style.display = 'block';
   resultCountEl.textContent = findings.length
-    ? `(${findings.length} finding${findings.length>1?'s':''})`
+    ? `(${findings.length} finding${findings.length > 1 ? 's' : ''})`
     : '';
 
   if(findings.length === 0){
@@ -261,23 +353,21 @@ function renderResults(findings){
     </div>
   `).join('');
 
-  resultsEl.scrollIntoView({behavior:'smooth', block:'start'});
+  resultsEl.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 checkBtn.addEventListener('click', () => {
   checkBtn.classList.add('loading');
   checkBtn.disabled = true;
 
-  // brief, honest "processing" delay — the check itself is instant,
-  // this just gives the action weight rather than a jarring snap-render
   setTimeout(() => {
     const findings = runCheck();
     renderResults(findings);
     checkBtn.classList.remove('loading');
     checkBtn.disabled = state.added.length < 2;
 
-    const worst = findings.some(f=>f.severity==='danger') ? 'danger'
-      : findings.some(f=>f.severity==='caution') ? 'caution' : 'safe';
+    const worst = findings.some(f => f.severity === 'danger') ? 'danger'
+      : findings.some(f => f.severity === 'caution') ? 'caution' : 'safe';
     pushHistory([...state.added], findings.length, worst);
 
     if(findings.some(f => f.severity === 'danger')){

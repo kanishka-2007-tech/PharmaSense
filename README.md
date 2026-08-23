@@ -1,4 +1,4 @@
-# PharmaSense — Medicine Interaction Checker
+# PharmaSense — AI-Powered Prescription & Medicine Interaction Checker
 
 A web app that checks a list of medicines against known drug-drug interactions
 and explains *why* each one matters, in plain language — not just a
@@ -8,13 +8,15 @@ and explains *why* each one matters, in plain language — not just a
 
 ## The problem
 
-Adverse drug reactions from unrecognized medicine combinations are a leading,
-preventable cause of hospital admissions — especially for patients on
-multiple prescriptions and in areas with fewer pharmacists per capita.
-Pharmacists catch a lot of this, but not everything makes it through.
+In India (and globally), a huge number of adverse drug reactions happen because
+patients — especially elderly ones on multiple medications — don't know which
+drugs interact badly with each other, or misread doctor handwriting on
+prescriptions. Pharmacists catch some of this, but a lot slips through,
+especially in rural areas with fewer pharmacists per capita.
 
 ## What it does
 
+- **Sidebar navigation** — quick access to the checker, history, and about section
 - **Search & add** medicines from a prescription (type-ahead, keyboard
   navigable)
 - **Checks every pair** against a curated dataset of ~25 well-documented
@@ -25,6 +27,8 @@ Pharmacists catch a lot of this, but not everything makes it through.
 - Each finding shows a **severity stamp**, a plain-language explanation of
   the mechanism, and a **"what to do"** recommendation
 - **Accounts + history** — sign up, sign in, and revisit your last 8 checks
+- **Large text toggle** — accessibility feature for elderly users
+- **Emergency info** — sidebar includes emergency guidance
 
 ## Tech stack
 
@@ -34,14 +38,12 @@ so the whole thing is easy to read, extend, and deploy for free.
 
 - **Auth**: client-side demo auth (`js/auth.js`) — accounts and sessions
   live in `localStorage`/`sessionStorage`. **This is not secure and is not
-  meant to be** — it exists so the project runs with zero backend. A real
-  build would hash+salt passwords server-side and issue a signed session
-  token from an API.
+  meant to be** — it exists so the project runs with zero backend.
 - **Data**: `js/data.js` holds the medicine list and interaction pairs as
   plain JS objects.
-- **Logic**: `js/app.js` handles search, chip management, the interaction
-  check itself, and history.
-- **Styling**: `css/styles.css` (shared design tokens + nav + forms),
+- **Logic**: `js/app.js` handles sidebar, search, chip management, the
+  interaction check itself, and history.
+- **Styling**: `css/styles.css` (design system + sidebar layout),
   `css/app.css` (checker-specific UI), `css/auth.css` (login/signup layout).
 
 ## Project structure
@@ -52,14 +54,14 @@ PharmaSense/
 ├── login.html
 ├── signup.html
 ├── css/
-│   ├── styles.css       # Design tokens, nav, buttons, forms, toast
-│   ├── app.css           # Search/chips/results/history styles
-│   └── auth.css           # Split-panel login/signup layout
+│   ├── styles.css       # Design system, sidebar layout, shared components
+│   ├── app.css           # Checker-specific UI styles
+│   └── auth.css          # Split-panel login/signup layout
 ├── js/
 │   ├── auth.js           # Signup / login / session guard / logout
-│   ├── data.js             # Medicine + interaction dataset
-│   ├── app.js               # Checker logic + history
-│   └── toast.js               # Toast notification helper
+│   ├── data.js           # Medicine + interaction dataset
+│   ├── app.js            # Sidebar + checker logic + history
+│   └── toast.js          # Toast notification helper
 ├── assets/
 │   └── favicon.svg
 └── README.md
@@ -93,6 +95,8 @@ Then open the printed local URL, sign up with any name/email/password
    wrap it in a small FastAPI or Express service, hash passwords with
    bcrypt, and issue JWTs. Turns this from a frontend demo into a full-stack
    project.
+5. **Add multilingual support** — Hindi, Tamil, etc. for broader accessibility
+   in India.
 
 ## Disclaimer
 

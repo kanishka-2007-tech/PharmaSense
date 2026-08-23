@@ -118,7 +118,7 @@
     if(pw.length >= 8) score++;
     if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
     if(/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
-    return score; // 0-3
+    return score;
   }
   const strengthColors = ['#c9d0c6', '#a83b26', '#9c6b1f', '#2F6E4F'];
   const strengthWords = ['', 'Weak', 'Okay', 'Strong'];
