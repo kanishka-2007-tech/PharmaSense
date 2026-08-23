@@ -47,7 +47,7 @@ so the whole thing is easy to read, extend, and deploy for free.
 ## Project structure
 
 ```
-pharma-sense/
+PharmaSense/
 ├── index.html          # Main checker app (protected — redirects to login)
 ├── login.html
 ├── signup.html
@@ -60,6 +60,8 @@ pharma-sense/
 │   ├── data.js             # Medicine + interaction dataset
 │   ├── app.js               # Checker logic + history
 │   └── toast.js               # Toast notification helper
+├── assets/
+│   └── favicon.svg
 └── README.md
 ```
 
@@ -70,7 +72,7 @@ No build step needed — but browsers restrict some features (like
 local server is the safer way to run it:
 
 ```bash
-cd pharma-sense
+cd PharmaSense
 npx serve .
 # or: python3 -m http.server 5500
 ```
