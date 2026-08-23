@@ -7,8 +7,8 @@
    session token (e.g. JWT) from an API instead.
    ======================================================= */
 
-const AUTH_USERS_KEY = "mic_users";
-const AUTH_SESSION_KEY = "mic_session";
+const AUTH_USERS_KEY = "ps_users";
+const AUTH_SESSION_KEY = "ps_session";
 
 // Small non-cryptographic hash — good enough to avoid storing
 // plaintext passwords in a demo, not good enough for real security.

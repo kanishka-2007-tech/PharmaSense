@@ -1,4 +1,4 @@
-# Interaction Note — Medicine Interaction Checker
+# PharmaSense — Medicine Interaction Checker
 
 A web app that checks a list of medicines against known drug-drug interactions
 and explains *why* each one matters, in plain language — not just a
@@ -47,7 +47,7 @@ so the whole thing is easy to read, extend, and deploy for free.
 ## Project structure
 
 ```
-medicine-interaction-checker/
+pharma-sense/
 ├── index.html          # Main checker app (protected — redirects to login)
 ├── login.html
 ├── signup.html
@@ -70,7 +70,7 @@ No build step needed — but browsers restrict some features (like
 local server is the safer way to run it:
 
 ```bash
-cd PharmaSense
+cd pharma-sense
 npx serve .
 # or: python3 -m http.server 5500
 ```

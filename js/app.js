@@ -40,16 +40,16 @@ document.addEventListener('click', () => navMenu.classList.remove('open'));
 logoutBtn.addEventListener('click', () => { logout(); });
 
 // first-login welcome banner (per browser session, not persisted)
-if(!sessionStorage.getItem('mic_welcomed')){
+if(!sessionStorage.getItem('ps_welcomed')){
   welcomeBanner.style.display = 'flex';
-  sessionStorage.setItem('mic_welcomed', '1');
+  sessionStorage.setItem('ps_welcomed', '1');
 }
 document.getElementById('dismissWelcome')?.addEventListener('click', () => {
   welcomeBanner.style.display = 'none';
 });
 
 // ---------- history (per user, persisted) ----------
-const HISTORY_KEY = `mic_history_${session.email}`;
+const HISTORY_KEY = `ps_history_${session.email}`;
 function getHistory(){
   try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
   catch(e){ return []; }
