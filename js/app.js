@@ -7,6 +7,11 @@ const session = requireAuth();
 const state = { added: [] };
 const nameToMed = Object.fromEntries(MEDICINES.map(m => [m.name.toLowerCase(), m]));
 
+const statMeds = document.getElementById('statMeds');
+const statInteractions = document.getElementById('statInteractions');
+if(statMeds) statMeds.textContent = `${MEDICINES.length}+`;
+if(statInteractions) statInteractions.textContent = `${INTERACTIONS.length}+`;
+
 // ---------- sidebar elements ----------
 const sidebar = document.getElementById('sidebar');
 const sidebarClose = document.getElementById('sidebarClose');
@@ -34,6 +39,8 @@ const welcomeBanner = document.getElementById('welcomeBanner');
 const historyList = document.getElementById('historyList');
 const historyPanel = document.getElementById('historyPanel');
 const fontSizeBtn = document.getElementById('fontSizeBtn');
+const consultationSection = document.getElementById('consultationSection');
+const deliverySection = document.getElementById('deliverySection');
 
 // ---------- sidebar user ----------
 sidebarAvatar.textContent = initials(session.name);
@@ -66,22 +73,43 @@ navItems.forEach(item => {
     item.classList.add('active');
 
     const page = item.dataset.page;
-    if(page === 'about'){
-      aboutSection.classList.add('visible');
-      document.querySelector('.checker-section').style.display = 'none';
-      resultsEl.style.display = 'none';
-      historyPanel.style.display = 'none';
-    } else if(page === 'history'){
-      aboutSection.classList.remove('visible');
-      document.querySelector('.checker-section').style.display = 'none';
-      resultsEl.style.display = 'none';
-      historyPanel.style.display = 'block';
-    } else {
-      aboutSection.classList.remove('visible');
-      document.querySelector('.checker-section').style.display = 'block';
-      historyPanel.style.display = state.added.length > 0 || getHistory().length > 0 ? 'block' : 'none';
-    }
+    aboutSection.classList.toggle('visible', page === 'about');
+    consultationSection.classList.toggle('visible', page === 'consultation');
+    deliverySection.classList.toggle('visible', page === 'delivery');
+    document.querySelector('.checker-section').style.display = page === 'checker' ? 'block' : 'none';
+    resultsEl.style.display = page === 'checker' && resultsListEl.innerHTML ? 'block' : 'none';
+    historyPanel.style.display = page === 'history' ? 'block' : page === 'checker' && (state.added.length > 0 || getHistory().length > 0) ? 'block' : 'none';
     closeSidebar();
+  });
+});
+
+function handleServiceRequest(form, message){
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    form.reset();
+    toast(message, 'success');
+  });
+}
+handleServiceRequest(document.getElementById('consultationForm'), 'Consultation request received');
+handleServiceRequest(document.getElementById('deliveryForm'), 'Delivery request received');
+
+// ---------- chatbot shortcut ----------
+const chatbotToggle = document.getElementById('chatbotToggle');
+const chatbotPanel = document.getElementById('chatbotPanel');
+const chatbotClose = document.getElementById('chatbotClose');
+function setChatbotOpen(isOpen){
+  chatbotPanel.classList.toggle('open', isOpen);
+  chatbotPanel.setAttribute('aria-hidden', String(!isOpen));
+  chatbotToggle.setAttribute('aria-expanded', String(isOpen));
+}
+chatbotToggle.addEventListener('click', () => {
+  setChatbotOpen(!chatbotPanel.classList.contains('open'));
+});
+chatbotClose.addEventListener('click', () => setChatbotOpen(false));
+document.querySelectorAll('[data-chat-action]').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelector(`.nav-item[data-page="${button.dataset.chatAction}"]`).click();
+    setChatbotOpen(false);
   });
 });
 

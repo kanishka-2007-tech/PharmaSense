@@ -42,6 +42,14 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       <span>About &amp; Help</span>
     </a>
+    <a href="#consultationSection" class="nav-item" data-page="consultation">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-4.1-1.05L3 20l1.05-3.9A8.5 8.5 0 1 1 20 11.5z"/><path d="M8 12h8M12 8v8"/></svg>
+      <span>Doctor Consultation</span>
+    </a>
+    <a href="#deliverySection" class="nav-item" data-page="delivery">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="13" rx="2"/><path d="M16 8h3l2 3v6h-5z"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="18.5" cy="19" r="1.5"/></svg>
+      <span>Medicine Delivery</span>
+    </a>
   </nav>
 
   <div class="sidebar-stats">
@@ -186,11 +194,73 @@
       </div>
     </section>
 
+    <section class="service-section" id="consultationSection">
+      <div class="section-header">
+        <h2>Doctor Consultation</h2>
+        <p>Request a call from a qualified doctor about your medicines or symptoms.</p>
+      </div>
+      <form class="service-form" id="consultationForm">
+        <div class="form-grid">
+          <label>Full name<input type="text" name="name" placeholder="e.g. Aditi Sharma" required></label>
+          <label>Phone number<input type="tel" name="phone" placeholder="e.g. 98765 43210" required></label>
+          <label>Preferred date<input type="date" name="date" required></label>
+          <label>Preferred time<select name="time" required><option value="">Choose a time</option><option>9:00 AM – 12:00 PM</option><option>12:00 PM – 3:00 PM</option><option>3:00 PM – 6:00 PM</option><option>6:00 PM – 9:00 PM</option></select></label>
+        </div>
+        <label>How can the doctor help?<textarea name="concern" rows="4" placeholder="Tell us briefly about your concern or medicines..." required></textarea></label>
+        <button class="btn btn-primary" type="submit">Request consultation</button>
+        <p class="form-note">This request form does not provide emergency care. Call your local emergency number for urgent symptoms.</p>
+      </form>
+    </section>
+
+    <section class="service-section" id="deliverySection">
+      <div class="section-header">
+        <h2>Medicine Delivery</h2>
+        <p>Request delivery when you are running low. Availability and prescription requirements will be confirmed before dispatch.</p>
+      </div>
+      <form class="service-form" id="deliveryForm">
+        <div class="form-grid">
+          <label>Medicine name<input type="text" name="medicine" placeholder="e.g. Dolo" required></label>
+          <label>Quantity<input type="number" name="quantity" min="1" placeholder="e.g. 1" required></label>
+          <label>Phone number<input type="tel" name="phone" placeholder="e.g. 98765 43210" required></label>
+          <label>Delivery address<input type="text" name="address" placeholder="House, street, city" required></label>
+        </div>
+        <label>Prescription (if required)<input type="file" name="prescription" accept="image/*,.pdf"></label>
+        <label class="checkbox-label"><input type="checkbox" name="confirm" required> I understand that prescription medicines require a valid prescription and pharmacist confirmation.</label>
+        <button class="btn btn-primary" type="submit">Request delivery</button>
+        <p class="form-note">This demo records your request only; connect a pharmacy, payment, and delivery service before using it in production.</p>
+      </form>
+    </section>
+
     <footer class="site-footer">
       <strong>Not medical advice.</strong> Built as a portfolio project on a curated subset of well-documented interactions. Always confirm with a qualified professional before changing any medication.
     </footer>
   </div>
 </main>
+
+<div class="chatbot-widget">
+  <div class="chatbot-panel" id="chatbotPanel" aria-hidden="true">
+    <div class="chatbot-panel-header">
+      <div>
+        <strong>PharmaSense Assistant</strong>
+        <span>Here to help</span>
+      </div>
+      <button class="chatbot-close" id="chatbotClose" aria-label="Close chatbot">&times;</button>
+    </div>
+    <div class="chatbot-message">Hi! I can help you find the interaction checker, request a consultation, or request medicine delivery.</div>
+    <div class="chatbot-links">
+      <button data-chat-action="consultation">Book a consultation</button>
+      <button data-chat-action="delivery">Request delivery</button>
+      <button data-chat-action="checker">Check interactions</button>
+    </div>
+  </div>
+  <button class="chatbot-fab" id="chatbotToggle" aria-label="Open PharmaSense chatbot" aria-expanded="false">
+    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-4.1-1.05L3 20l1.05-3.9A8.5 8.5 0 1 1 20 11.5z"/>
+      <path d="M8 13h.01M12 13h.01M16 13h.01"/>
+    </svg>
+    <span class="chatbot-pulse" aria-hidden="true"></span>
+  </button>
+</div>
 
 <script src="js/auth.js"></script>
 <script src="js/toast.js"></script>
