@@ -102,6 +102,8 @@ const chatbotForm = document.getElementById('chatbotForm');
 const chatbotInput = document.getElementById('chatbotInput');
 const chatbotMic = document.getElementById('chatbotMic');
 const chatbotStatus = document.getElementById('chatbotStatus');
+const consultationForm = document.getElementById('consultationForm');
+const consultationTimes = [...consultationForm.elements.time.options].slice(1).map(option => option.value);
 function setChatbotOpen(isOpen){
   chatbotPanel.classList.toggle('open', isOpen);
   chatbotPanel.setAttribute('aria-hidden', String(!isOpen));
@@ -114,6 +116,10 @@ chatbotToggle.addEventListener('click', () => {
 chatbotClose.addEventListener('click', () => setChatbotOpen(false));
 document.querySelectorAll('[data-chat-action]').forEach(button => {
   button.addEventListener('click', () => {
+    if(button.dataset.chatAction === 'consultation'){
+      startConsultationFlow('I want to book a consultation.');
+      return;
+    }
     chatbotReply(button.textContent.trim(), `Opening ${button.textContent.trim().toLowerCase()} now.`);
     document.querySelector(`.nav-item[data-page="${button.dataset.chatAction}"]`).click();
     setChatbotOpen(false);
@@ -149,13 +155,107 @@ function navigateFromChat(page, reply, userText){
   chatbotReply(userText, reply);
 }
 
+const consultationFlow = { step: null, data: {} };
+
+function assistantOnly(text){
+  addChatMessage(text, 'assistant');
+  speakChatbot(text);
+}
+
+function startConsultationFlow(userText){
+  consultationFlow.step = 'name';
+  consultationFlow.data = {};
+  document.querySelector('.nav-item[data-page="consultation"]').click();
+  chatbotReply(userText, 'I can book that for you. What is your full name?');
+}
+
+function dateForForm(value){
+  const text = value.trim().toLowerCase();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let date;
+
+  if(text === 'today') date = new Date(today);
+  else if(text === 'tomorrow') date = new Date(today.getTime() + 86400000);
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(text)) date = new Date(`${text}T12:00:00`);
+  else date = new Date(text);
+
+  if(Number.isNaN(date.getTime()) || date < today) return '';
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+}
+
+function timeForForm(value){
+  const text = value.trim().toLowerCase();
+  const number = Number.parseInt(text, 10);
+  if(number >= 1 && number <= consultationTimes.length) return consultationTimes[number - 1];
+  if(/9|morning/.test(text)) return consultationTimes[0];
+  if(/12|noon|afternoon/.test(text)) return consultationTimes[1];
+  if(/3/.test(text)) return consultationTimes[2];
+  if(/6|evening|night/.test(text)) return consultationTimes[3];
+  return '';
+}
+
+function handleConsultationAnswer(rawText){
+  const answer = rawText.trim();
+  if(!answer) return;
+  addChatMessage(answer, 'user');
+
+  if(consultationFlow.step === 'name'){
+    if(answer.length < 2){ assistantOnly('Please tell me your full name so I can book the consultation.'); return; }
+    consultationFlow.data.name = answer;
+    consultationFlow.step = 'phone';
+    assistantOnly('What phone number should the doctor use to contact you?');
+    return;
+  }
+  if(consultationFlow.step === 'phone'){
+    if(!/[0-9]{7,}/.test(answer.replace(/\D/g, ''))){ assistantOnly('Please provide a valid phone number with at least 7 digits.'); return; }
+    consultationFlow.data.phone = answer;
+    consultationFlow.step = 'date';
+    assistantOnly('What date would you prefer? You can say tomorrow or provide a date such as 2026-10-05.');
+    return;
+  }
+  if(consultationFlow.step === 'date'){
+    const date = dateForForm(answer);
+    if(!date){ assistantOnly('That date is invalid or has already passed. Please provide a future date, such as 2026-10-05.'); return; }
+    consultationFlow.data.date = date;
+    consultationFlow.step = 'time';
+    assistantOnly('Which time works best? Say 1 for 9 AM to 12 PM, 2 for 12 PM to 3 PM, 3 for 3 PM to 6 PM, or 4 for 6 PM to 9 PM.');
+    return;
+  }
+  if(consultationFlow.step === 'time'){
+    const time = timeForForm(answer);
+    if(!time){ assistantOnly('Please choose time 1, 2, 3, or 4 from the available consultation slots.'); return; }
+    consultationFlow.data.time = time;
+    consultationFlow.step = 'concern';
+    assistantOnly('Please briefly describe the issue or medicines you want to discuss with the doctor.');
+    return;
+  }
+  if(consultationFlow.step === 'concern'){
+    if(answer.length < 3){ assistantOnly('Please provide a short description so the doctor knows how to help.'); return; }
+    consultationFlow.data.concern = answer;
+    const data = consultationFlow.data;
+    consultationForm.elements.name.value = data.name;
+    consultationForm.elements.phone.value = data.phone;
+    consultationForm.elements.date.value = data.date;
+    consultationForm.elements.time.value = data.time;
+    consultationForm.elements.concern.value = data.concern;
+    consultationForm.requestSubmit();
+    consultationFlow.step = null;
+    assistantOnly(`Your consultation request has been booked for ${data.date}, ${data.time}. A doctor can contact you at ${data.phone}.`);
+  }
+}
+
 function answerChatbot(rawText){
   const text = rawText.trim();
   if(!text) return;
+  if(consultationFlow.step){
+    handleConsultationAnswer(text);
+    return;
+  }
   const lower = text.toLowerCase();
 
-  if(/\b(consult|consultation|doctor|speak to a doctor|medical advice)\b/.test(lower)){
-    navigateFromChat('consultation', 'I’m opening the doctor consultation form for you.', text);
+  if(/\b(consult|consultation|doctor|speak to a doctor|medical advice|issue|problem|symptom|side effect|unwell)\b/.test(lower)){
+    startConsultationFlow(text);
     return;
   }
   if(/\b(delivery|deliver|order|pharmacy|refill)\b/.test(lower)){
