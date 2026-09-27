@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">PharmaSense logo</title>
+  <desc id="desc">A medicine capsule protected by a shield and checkmark</desc>
   <circle cx="32" cy="32" r="29" fill="#EEF1EC" stroke="#1F2D3A" stroke-width="3.5"/>
   <path d="M32 11.5 47.5 17v12.1c0 10-6.3 18.4-15.5 22.1-9.2-3.7-15.5-12.1-15.5-22.1V17L32 11.5Z" fill="#2F6E4F"/>
   <rect x="24" y="20" width="16" height="25" rx="8" transform="rotate(35 32 32.5)" fill="#E8836B" stroke="#EEF1EC" stroke-width="2"/>

@@ -39,14 +39,7 @@
 }
 .auth-side-brand .brand-mark{
   width: 36px; height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid #f0f2ef;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 16px;
-  color: #e8836b;
+  display: block;
   flex-shrink: 0;
 }
 
@@ -113,14 +106,7 @@
 }
 .auth-card .brand-mobile .brand-mark{
   width: 32px; height: 32px;
-  border-radius: 50%;
-  border: 1.5px solid var(--ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 14px;
-  color: var(--danger);
+  display: block;
 }
 .auth-card h1{
   font-family: var(--font-display);
