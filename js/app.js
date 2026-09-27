@@ -97,10 +97,16 @@ handleServiceRequest(document.getElementById('deliveryForm'), 'Delivery request 
 const chatbotToggle = document.getElementById('chatbotToggle');
 const chatbotPanel = document.getElementById('chatbotPanel');
 const chatbotClose = document.getElementById('chatbotClose');
+const chatbotMessages = document.getElementById('chatbotMessages');
+const chatbotForm = document.getElementById('chatbotForm');
+const chatbotInput = document.getElementById('chatbotInput');
+const chatbotMic = document.getElementById('chatbotMic');
+const chatbotStatus = document.getElementById('chatbotStatus');
 function setChatbotOpen(isOpen){
   chatbotPanel.classList.toggle('open', isOpen);
   chatbotPanel.setAttribute('aria-hidden', String(!isOpen));
   chatbotToggle.setAttribute('aria-expanded', String(isOpen));
+  if(isOpen) chatbotInput.focus();
 }
 chatbotToggle.addEventListener('click', () => {
   setChatbotOpen(!chatbotPanel.classList.contains('open'));
@@ -108,10 +114,113 @@ chatbotToggle.addEventListener('click', () => {
 chatbotClose.addEventListener('click', () => setChatbotOpen(false));
 document.querySelectorAll('[data-chat-action]').forEach(button => {
   button.addEventListener('click', () => {
+    chatbotReply(button.textContent.trim(), `Opening ${button.textContent.trim().toLowerCase()} now.`);
     document.querySelector(`.nav-item[data-page="${button.dataset.chatAction}"]`).click();
     setChatbotOpen(false);
   });
 });
+
+// ---------- chatbot text + voice assistant ----------
+function addChatMessage(text, role){
+  const message = document.createElement('div');
+  message.className = `chatbot-message chatbot-message-${role}`;
+  message.textContent = text;
+  chatbotMessages.appendChild(message);
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+function speakChatbot(text){
+  if(!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+function chatbotReply(userText, assistantText){
+  addChatMessage(userText, 'user');
+  addChatMessage(assistantText, 'assistant');
+  speakChatbot(assistantText);
+}
+
+function navigateFromChat(page, reply, userText){
+  document.querySelector(`.nav-item[data-page="${page}"]`).click();
+  chatbotReply(userText, reply);
+}
+
+function answerChatbot(rawText){
+  const text = rawText.trim();
+  if(!text) return;
+  const lower = text.toLowerCase();
+
+  if(/\b(consult|consultation|doctor|speak to a doctor|medical advice)\b/.test(lower)){
+    navigateFromChat('consultation', 'I’m opening the doctor consultation form for you.', text);
+    return;
+  }
+  if(/\b(delivery|deliver|order|pharmacy|refill)\b/.test(lower)){
+    navigateFromChat('delivery', 'I’m opening the medicine delivery request form for you.', text);
+    return;
+  }
+
+  const foundMedicines = MEDICINES.filter(m => lower.includes(m.name.toLowerCase()));
+  if(foundMedicines.length >= 2 && /\b(check|interaction|interactions|safe|together|combine|mix)\b/.test(lower)){
+    foundMedicines.forEach(m => addMedicine(m.name));
+    document.querySelector('.nav-item[data-page="checker"]').click();
+    chatbotReply(text, `I added ${foundMedicines.map(m => m.name).join(' and ')} to the checker. Review the results there before taking medicines together.`);
+    return;
+  }
+  if(/\b(checker|check medicines|check interactions|interaction)\b/.test(lower)){
+    navigateFromChat('checker', 'I’m opening the interaction checker. Add at least two medicines to compare them.', text);
+    return;
+  }
+  if(/\b(hello|hi|hey|help)\b/.test(lower)){
+    chatbotReply(text, 'You can ask me to check medicine interactions, open a doctor consultation, or request medicine delivery.');
+    return;
+  }
+  chatbotReply(text, 'I can open the interaction checker, doctor consultation, or medicine delivery. Try saying “check Warfarin and Aspirin interactions.”');
+}
+
+chatbotForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const text = chatbotInput.value;
+  chatbotInput.value = '';
+  answerChatbot(text);
+});
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRecognition){
+  const recognition = new SpeechRecognition();
+  recognition.lang = document.documentElement.lang || 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.addEventListener('start', () => {
+    chatbotMic.classList.add('listening');
+    chatbotStatus.textContent = 'Listening... speak now';
+  });
+  recognition.addEventListener('result', event => {
+    const transcript = event.results[0][0].transcript;
+    chatbotInput.value = transcript;
+    chatbotForm.requestSubmit();
+  });
+  recognition.addEventListener('error', event => {
+    chatbotStatus.textContent = event.error === 'not-allowed'
+      ? 'Microphone permission was blocked'
+      : 'I could not hear that. Please try again.';
+  });
+  recognition.addEventListener('end', () => {
+    chatbotMic.classList.remove('listening');
+    if(chatbotStatus.textContent === 'Listening... speak now') chatbotStatus.textContent = 'Tap the microphone to speak';
+  });
+  chatbotMic.addEventListener('click', () => {
+    if(chatbotMic.classList.contains('listening')) recognition.stop();
+    else recognition.start();
+  });
+} else {
+  chatbotMic.disabled = true;
+  chatbotMic.title = 'Voice input is not supported in this browser';
+  chatbotStatus.textContent = 'Voice input is not supported here; you can type instead.';
+}
 
 // ---------- font size toggle ----------
 fontSizeBtn.addEventListener('click', () => {

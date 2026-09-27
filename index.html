@@ -246,12 +246,20 @@
       </div>
       <button class="chatbot-close" id="chatbotClose" aria-label="Close chatbot">&times;</button>
     </div>
-    <div class="chatbot-message">Hi! I can help you find the interaction checker, request a consultation, or request medicine delivery.</div>
+    <div class="chatbot-messages" id="chatbotMessages" aria-live="polite">
+      <div class="chatbot-message chatbot-message-assistant">Hi! I can help you find the interaction checker, request a consultation, or request medicine delivery. You can type or use the microphone.</div>
+    </div>
     <div class="chatbot-links">
       <button data-chat-action="consultation">Book a consultation</button>
       <button data-chat-action="delivery">Request delivery</button>
       <button data-chat-action="checker">Check interactions</button>
     </div>
+    <form class="chatbot-input" id="chatbotForm">
+      <input id="chatbotInput" type="text" placeholder="Ask PharmaSense..." autocomplete="off" aria-label="Message PharmaSense Assistant">
+      <button type="button" class="chatbot-mic" id="chatbotMic" aria-label="Speak to PharmaSense Assistant" title="Speak">&#127908;</button>
+      <button type="submit" class="chatbot-send" aria-label="Send message">&#10148;</button>
+    </form>
+    <div class="chatbot-status" id="chatbotStatus" aria-live="polite">Tap the microphone to speak</div>
   </div>
   <button class="chatbot-fab" id="chatbotToggle" aria-label="Open PharmaSense chatbot" aria-expanded="false">
     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
