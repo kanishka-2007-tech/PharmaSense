@@ -36,8 +36,8 @@ Plain HTML/CSS/JS — no build step, no framework, runs by opening
 `index.html` (or via `npx serve`, see below). Deliberately dependency-light
 so the whole thing is easy to read, extend, and deploy for free.
 
-- **Auth**: client-side demo auth (`js/auth.js`) — accounts and sessions
-  live in `localStorage`/`sessionStorage`. **This is not secure and is not
+- **Auth**: client-side demo auth (`js/auth.js`) — accounts and persistent sessions
+  live in `localStorage`. **This is not secure and is not
   meant to be** — it exists so the project runs with zero backend.
 - **Data**: `js/data.js` holds the medicine list and interaction pairs as
   plain JS objects.

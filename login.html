@@ -92,6 +92,9 @@
   const submitBtn = document.getElementById('submitBtn');
   const toggleBtn = document.getElementById('togglePassword');
 
+  // Remember the email only; never store the password in browser storage.
+  emailInput.value = getLastLoginEmail();
+
   toggleBtn.addEventListener('click', () => {
     const isPw = passwordInput.type === 'password';
     passwordInput.type = isPw ? 'text' : 'password';

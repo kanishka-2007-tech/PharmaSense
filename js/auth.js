@@ -9,6 +9,7 @@
 
 const AUTH_USERS_KEY = "ps_users";
 const AUTH_SESSION_KEY = "ps_session";
+const AUTH_LAST_EMAIL_KEY = "ps_last_email";
 
 // Small non-cryptographic hash — good enough to avoid storing
 // plaintext passwords in a demo, not good enough for real security.
@@ -33,13 +34,30 @@ function saveUsers(users){
 }
 
 function getSession(){
-  try{ return JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY)); }
-  catch(e){ return null; }
+  try{
+    // Keep the login across browser visits. Older builds stored this in
+    // sessionStorage, so migrate an existing session the first time it is read.
+    const stored = localStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_SESSION_KEY);
+    if(!stored) return null;
+
+    const session = JSON.parse(stored);
+    if(!localStorage.getItem(AUTH_SESSION_KEY)){
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+    }
+    return session;
+  } catch(e){ return null; }
 }
 function setSession(session){
-  sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTH_LAST_EMAIL_KEY, session.email);
+  sessionStorage.removeItem(AUTH_SESSION_KEY);
+}
+function getLastLoginEmail(){
+  return localStorage.getItem(AUTH_LAST_EMAIL_KEY) || "";
 }
 function clearSession(){
+  localStorage.removeItem(AUTH_SESSION_KEY);
   sessionStorage.removeItem(AUTH_SESSION_KEY);
 }
 
