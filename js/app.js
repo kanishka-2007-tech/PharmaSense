@@ -87,11 +87,11 @@ function handleServiceRequest(form, message){
   form.addEventListener('submit', e => {
     e.preventDefault();
     form.reset();
-    toast(message, 'success');
+    toast(typeof message === 'function' ? message() : message, 'success');
   });
 }
-handleServiceRequest(document.getElementById('consultationForm'), 'Consultation request received');
-handleServiceRequest(document.getElementById('deliveryForm'), 'Delivery request received');
+handleServiceRequest(document.getElementById('consultationForm'), () => t('consultationReceived'));
+handleServiceRequest(document.getElementById('deliveryForm'), () => t('deliveryReceived'));
 
 // ---------- chatbot shortcut ----------
 const chatbotToggle = document.getElementById('chatbotToggle');
@@ -291,12 +291,12 @@ chatbotForm.addEventListener('submit', event => {
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   const recognition = new SpeechRecognition();
-  recognition.lang = document.documentElement.lang || 'en-US';
+  recognition.lang = window.psSpeechLanguage || 'en-US';
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   recognition.addEventListener('start', () => {
     chatbotMic.classList.add('listening');
-    chatbotStatus.textContent = 'Listening... speak now';
+    chatbotStatus.textContent = t('voiceHint');
   });
   recognition.addEventListener('result', event => {
     const transcript = event.results[0][0].transcript;
@@ -310,8 +310,9 @@ if(SpeechRecognition){
   });
   recognition.addEventListener('end', () => {
     chatbotMic.classList.remove('listening');
-    if(chatbotStatus.textContent === 'Listening... speak now') chatbotStatus.textContent = 'Tap the microphone to speak';
+    if(chatbotStatus.textContent === t('voiceHint')) chatbotStatus.textContent = t('voiceHint');
   });
+  window.addEventListener('ps-language-change', event => { recognition.lang = event.detail.speech; });
   chatbotMic.addEventListener('click', () => {
     if(chatbotMic.classList.contains('listening')) recognition.stop();
     else recognition.start();
@@ -327,7 +328,7 @@ fontSizeBtn.addEventListener('click', () => {
   document.body.classList.toggle('large-text');
   const isLarge = document.body.classList.contains('large-text');
   localStorage.setItem('ps_large_text', isLarge ? '1' : '0');
-  toast(isLarge ? 'Large text enabled' : 'Large text disabled', 'info');
+  toast(isLarge ? t('largeEnabled') : t('largeDisabled'), 'info');
 });
 if(localStorage.getItem('ps_large_text') === '1'){
   document.body.classList.add('large-text');
@@ -362,7 +363,7 @@ function renderHistory(){
 
   // main history section
   if(hist.length === 0){
-    historyList.innerHTML = '<div class="history-empty">No checks yet. Add medicines and run a check to see results here.</div>';
+    historyList.innerHTML = `<div class="history-empty">${t('historyEmpty')}</div>`;
   } else {
     historyList.innerHTML = hist.map(h => {
       const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
@@ -464,13 +465,11 @@ function renderChips(){
   ).join('');
   checkBtn.disabled = state.added.length < 2;
   emptyHint.style.display = state.added.length < 2 ? 'block' : 'none';
-  emptyHint.textContent = state.added.length === 0
-    ? 'Add at least two medicines to run a check.'
-    : 'Add one more medicine to run a check.';
+  emptyHint.textContent = state.added.length === 0 ? t('addTwo') : t('addOne');
 
   if(state.added.length > 0){
     chipsArea.classList.add('visible');
-    chipsLabel.textContent = `Selected medicines (${state.added.length})`;
+    chipsLabel.textContent = `${t('selectedMedicines')} (${state.added.length})`;
   } else {
     chipsArea.classList.remove('visible');
   }
@@ -528,7 +527,7 @@ function findInteraction(nameA, nameB){
   return INTERACTIONS.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
 }
 function severityLabel(sev){
-  return sev === 'danger' ? 'High Risk' : sev === 'caution' ? 'Caution' : 'Safe';
+  return sev === 'danger' ? t('highRisk') : sev === 'caution' ? t('caution') : t('safe');
 }
 
 function runCheck(){
@@ -580,13 +579,13 @@ function renderResults(findings){
 
   resultsListEl.innerHTML = findings.map(f => `
     <div class="note-card ${f.severity}">
-      ${f.duplicate ? `<div class="duplicate-tag">Duplicate therapy</div>` : ''}
+      ${f.duplicate ? `<div class="duplicate-tag">${t('duplicate')}</div>` : ''}
       <div class="note-top">
         <div class="pair-name">${f.pair.join(f.duplicate ? '' : ' + ')}</div>
         <div class="stamp ${f.severity}">${severityLabel(f.severity)}</div>
       </div>
       <div class="note-body">${f.text}</div>
-      <div class="note-reco"><strong>What to do: </strong>${f.reco}</div>
+      <div class="note-reco"><strong>${t('whatToDo')}</strong>${f.reco}</div>
     </div>
   `).join('');
 
@@ -615,4 +614,11 @@ checkBtn.addEventListener('click', () => {
       toast('No known interactions found', 'success');
     }
   }, 450);
+});
+
+// Repaint generated content when the user changes language.
+window.addEventListener('ps-language-change', () => {
+  renderChips();
+  renderHistory();
+  if(state.added.length >= 2 && resultsListEl.innerHTML) renderResults(runCheck());
 });

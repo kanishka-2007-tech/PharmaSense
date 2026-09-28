@@ -12,6 +12,11 @@
   margin-bottom: 28px;
 }
 
+.language-picker{display:flex;align-items:center;gap:7px;color:var(--ink-soft);font-size:12px;font-weight:600}
+.language-picker select{border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--card);color:var(--ink);padding:8px 28px 8px 9px;font:inherit;cursor:pointer}
+.language-label{white-space:nowrap}
+@media (max-width:600px){.language-label{display:none}.language-picker select{max-width:92px}}
+
 /* ---------- search / autocomplete ---------- */
 .search-container{ position: relative; }
 .search-icon{
