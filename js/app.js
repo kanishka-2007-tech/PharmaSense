@@ -47,6 +47,19 @@ const historyPanel = document.getElementById('historyPanel');
 const fontSizeBtn = document.getElementById('fontSizeBtn');
 const consultationSection = document.getElementById('consultationSection');
 const deliverySection = document.getElementById('deliverySection');
+const scanMedicineBtn = document.getElementById('scanMedicineBtn');
+const medicineImageInput = document.getElementById('medicineImageInput');
+const scannerPanel = document.getElementById('scannerPanel');
+const scannerClose = document.getElementById('scannerClose');
+const scannerPreviewWrap = document.getElementById('scannerPreviewWrap');
+const scannerPreview = document.getElementById('scannerPreview');
+const scannerStatus = document.getElementById('scannerStatus');
+const scannerProgress = document.getElementById('scannerProgress');
+const scannerOcr = document.getElementById('scannerOcr');
+const scannerOcrText = document.getElementById('scannerOcrText');
+const scannerMatches = document.getElementById('scannerMatches');
+const scannerMatchList = document.getElementById('scannerMatchList');
+const scannerSearchFallback = document.getElementById('scannerSearchFallback');
 
 // ---------- sidebar user ----------
 sidebarAvatar.textContent = initials(session.name);
@@ -423,6 +436,129 @@ function loadFromHistory(el){
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 renderHistory();
+
+// ---------- prescription / strip scanner ----------
+function openScanner(){
+  scannerPanel.hidden = false;
+  scannerStatus.textContent = window.Tesseract ? 'Choose a clear, well-lit photo.' : 'Scanner is unavailable offline. Use the search box instead.';
+  scannerPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function resetScanner(){
+  scannerPanel.hidden = true;
+  medicineImageInput.value = '';
+  scannerPreview.removeAttribute('src');
+  scannerPreviewWrap.hidden = true;
+  scannerProgress.hidden = true;
+  scannerOcr.hidden = true;
+  scannerMatches.hidden = true;
+  scannerMatchList.innerHTML = '';
+}
+scanMedicineBtn.addEventListener('click', () => { openScanner(); medicineImageInput.click(); });
+scannerClose.addEventListener('click', resetScanner);
+scannerSearchFallback.addEventListener('click', () => { resetScanner(); searchInput.focus(); });
+medicineImageInput.addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if(file) scanMedicineImage(file);
+});
+
+function normalizeOcr(value){
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function levenshtein(a, b){
+  const row = Array.from({length: b.length + 1}, (_, i) => i);
+  for(let i = 1; i <= a.length; i++){
+    let previous = row[0]; row[0] = i;
+    for(let j = 1; j <= b.length; j++){
+      const current = row[j];
+      row[j] = a[i - 1] === b[j - 1]
+        ? previous
+        : Math.min(previous + 1, row[j - 1] + 1, current + 1);
+      previous = current;
+    }
+  }
+  return row[b.length];
+}
+function medicineMatches(ocrText){
+  const normalized = normalizeOcr(ocrText);
+  const words = normalized.split(' ').filter(Boolean);
+  return MEDICINES.map(med => {
+    const name = normalizeOcr(med.name);
+    const nameWords = name.split(' ');
+    const exact = normalized.includes(name) || nameWords.some(word => words.includes(word));
+    const distance = Math.min(...nameWords.map(word => {
+      const closest = words.length ? Math.min(...words.map(candidate => levenshtein(word, candidate))) : word.length;
+      return closest / Math.max(word.length, 1);
+    }));
+    const score = exact ? 0.98 : Math.max(0, 1 - distance);
+    return {med, score};
+  }).filter(result => !state.added.includes(result.med.name))
+    .filter(result => result.score >= 0.42)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+}
+function prepareImage(file){
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const max = 1800, scale = Math.min(1, max / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const ctx = canvas.getContext('2d', {willReadFrequently: true});
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for(let i = 0; i < pixels.data.length; i += 4){
+        const gray = pixels.data[i] * 0.299 + pixels.data[i + 1] * 0.587 + pixels.data[i + 2] * 0.114;
+        const contrast = Math.max(0, Math.min(255, (gray - 128) * 1.35 + 128));
+        pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = contrast;
+      }
+      ctx.putImageData(pixels, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    };
+    image.onerror = reject;
+    image.src = URL.createObjectURL(file);
+  });
+}
+async function scanMedicineImage(file){
+  if(!window.Tesseract){ scannerStatus.textContent = 'OCR is unavailable. Use the search box instead.'; return; }
+  scannerPreview.src = URL.createObjectURL(file);
+  scannerPreviewWrap.hidden = false;
+  scannerOcr.hidden = true;
+  scannerMatches.hidden = true;
+  scannerProgress.hidden = false;
+  scannerStatus.textContent = 'Preparing image...';
+  try{
+    const image = await prepareImage(file);
+    scannerStatus.textContent = 'Reading medicine text...';
+    const result = await Tesseract.recognize(image, 'eng', {
+      logger: message => {
+        if(message.status === 'recognizing text') scannerProgress.querySelector('span').style.width = `${Math.round((message.progress || 0) * 100)}%`;
+      }
+    });
+    const text = result.data.text.trim();
+    scannerOcrText.textContent = text || 'No readable text found';
+    scannerOcr.hidden = false;
+    const matches = medicineMatches(text);
+    scannerMatchList.innerHTML = matches.length ? matches.map((match, index) => `
+      <button class="scanner-match" type="button" data-match-index="${index}">
+        <span><strong>${match.med.name}</strong><small>${match.med.cls}</small></span>
+        <em>${Math.round(match.score * 100)}% match</em>
+      </button>`).join('') : '<div class="scanner-no-match">No confident match. Try a closer photo or search manually.</div>';
+    scannerMatches.hidden = false;
+    scannerStatus.textContent = matches.length ? 'Review the suggestions below before adding one.' : 'We could not confidently identify a medicine.';
+    scannerMatchList.querySelectorAll('[data-match-index]').forEach(button => button.addEventListener('click', () => {
+      const match = matches[Number(button.dataset.matchIndex)];
+      addMedicine(match.med.name);
+      scannerStatus.textContent = `${match.med.name} added to your medicines.`;
+      scannerMatches.hidden = true;
+    }));
+  } catch(error){
+    scannerStatus.textContent = 'Could not read that image. Try a sharper, better-lit photo or search manually.';
+    scannerMatches.hidden = true;
+  } finally {
+    scannerProgress.hidden = true;
+  }
+}
 
 // ---------- search / autocomplete ----------
 let activeIndex = -1;

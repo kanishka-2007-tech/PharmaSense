@@ -6,6 +6,7 @@
 
 const MEDICINES = [
   {name:"Dolo", cls:"Paracetamol (Pain & Fever Relief)"},
+  {name:"Paracetamol", cls:"Pain & Fever Relief"},
   {name:"Warfarin", cls:"Anticoagulant"},
   {name:"Aspirin", cls:"NSAID / Antiplatelet"},
   {name:"Ibuprofen", cls:"NSAID"},
