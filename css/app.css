@@ -147,6 +147,38 @@
   align-items: baseline;
   gap: 10px;
 }
+.verdict-card{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  animation: card-in 0.25s var(--ease);
+}
+.verdict-card.safe{ background: var(--safe-bg); border-color: var(--safe-border); color: #14532d; }
+.verdict-card.caution{ background: var(--caution-bg); border-color: #e8c875; color: #854d0e; }
+.verdict-card.avoid{ background: var(--danger-bg); border-color: #e4aaa0; color: #8f2d1d; }
+.verdict-icon{
+  width: 42px; height: 42px; display: grid; place-items: center;
+  border-radius: 50%; color: #fff; background: var(--ink-soft);
+  font: 700 22px var(--font-display);
+}
+.verdict-card.safe .verdict-icon{ background: var(--safe); }
+.verdict-card.caution .verdict-icon{ background: var(--caution); }
+.verdict-card.avoid .verdict-icon{ background: var(--danger); }
+.verdict-eyebrow{
+  font: 600 10px var(--font-mono); text-transform: uppercase;
+  letter-spacing: .12em; opacity: .75; margin-bottom: 3px;
+}
+.verdict-title{ font: 700 21px var(--font-display); color: var(--ink); }
+.verdict-copy p{ margin: 5px 0 0; max-width: 650px; font-size: 13.5px; line-height: 1.5; }
+.verdict-meds{ display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; max-width: 220px; }
+.verdict-meds span{ padding: 5px 8px; border: 1px solid currentColor; border-radius: 999px; font-size: 11px; opacity: .8; }
 .results-count{
   font-family: var(--font-mono);
   font-size: 13px;
@@ -414,6 +446,9 @@
   .search-input{ font-size: 15px !important; padding: 14px 14px 14px 44px !important; }
   .note-card{ padding: 18px 16px; }
   .pair-name{ font-size: 17px; }
+  .verdict-card{ grid-template-columns: auto 1fr; padding: 18px 16px; }
+  .verdict-meds{ grid-column: 1 / -1; justify-content: flex-start; max-width: none; }
+  .verdict-title{ font-size: 18px; }
   .history-section{ padding: 16px; }
   .service-section{ padding: 20px 16px; }
   .form-grid{ grid-template-columns: 1fr; }

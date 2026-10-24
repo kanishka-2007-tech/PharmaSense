@@ -35,6 +35,12 @@ const emptyHint = document.getElementById('emptyHint');
 const resultsEl = document.getElementById('results');
 const resultsListEl = document.getElementById('resultsList');
 const resultCountEl = document.getElementById('resultCount');
+const verdictCard = document.getElementById('verdictCard');
+const verdictIcon = document.getElementById('verdictIcon');
+const verdictLabel = document.getElementById('verdictLabel');
+const verdictTitle = document.getElementById('verdictTitle');
+const verdictText = document.getElementById('verdictText');
+const verdictMeds = document.getElementById('verdictMeds');
 const welcomeBanner = document.getElementById('welcomeBanner');
 const historyList = document.getElementById('historyList');
 const historyPanel = document.getElementById('historyPanel');
@@ -572,8 +578,38 @@ function renderResults(findings){
     ? `(${findings.length} finding${findings.length > 1 ? 's' : ''})`
     : '';
 
+  const hasDanger = findings.some(f => f.severity === 'danger');
+  const hasCaution = findings.some(f => f.severity === 'caution');
+  const verdict = hasDanger ? 'avoid' : hasCaution ? 'caution' : 'safe';
+  const verdictContent = {
+    avoid: {
+      label: 'Overall result - AVOID',
+      title: 'Avoid combining these medicines',
+      text: 'A high-risk interaction was found. Pause and speak with a doctor or pharmacist before taking this combination together.',
+      icon: '!'
+    },
+    caution: {
+      label: 'Overall result · CAUTION',
+      title: 'Use caution with this combination',
+      text: 'A potential interaction was found. It may be manageable with timing, monitoring, or a prescriber advice.',
+      icon: 'i'
+    },
+    safe: {
+      label: 'Overall result · SAFE*',
+      title: 'No known interactions found',
+      text: 'Nothing in this checker curated dataset suggests a known interaction between these medicines. This is not a guarantee of safety.',
+      icon: 'OK'
+    }
+  }[verdict];
+  verdictCard.className = `verdict-card ${verdict}`;
+  verdictIcon.textContent = verdictContent.icon;
+  verdictLabel.textContent = verdictContent.label;
+  verdictTitle.textContent = verdictContent.title;
+  verdictText.textContent = verdictContent.text;
+  verdictMeds.innerHTML = state.added.map(name => `<span>${name}</span>`).join('');
+
   if(findings.length === 0){
-    resultsListEl.innerHTML = `<div class="all-clear"><strong>No known interactions found</strong>No conflicts were found among these ${state.added.length} medicines in this checker's dataset. This does not guarantee safety — the dataset covers a curated subset of well-documented interactions, not the full universe of medicines.</div>`;
+    resultsListEl.innerHTML = `<div class="all-clear"><strong>Nothing to flag in this check</strong>We found no conflicts among these ${state.added.length} medicines in the curated dataset.</div>`;
     return;
   }
 
