@@ -5,8 +5,7 @@
 const session = requireAuth();
 
 const state = { added: [] };
-let nameToMed = Object.fromEntries(MEDICINES.map(m => [m.name.toLowerCase(), m]));
-let historyCache = [];
+const nameToMed = Object.fromEntries(MEDICINES.map(m => [m.name.toLowerCase(), m]));
 
 const statMeds = document.getElementById('statMeds');
 const statInteractions = document.getElementById('statInteractions');
@@ -363,9 +362,20 @@ document.getElementById('dismissWelcome')?.addEventListener('click', () => {
   welcomeBanner.style.display = 'none';
 });
 
-// ---------- history (stored by the API per user) ----------
+// ---------- history (per user, persisted) ----------
+const HISTORY_KEY = `ps_history_${session.email}`;
 function getHistory(){
-  return historyCache;
+  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch(e){ return []; }
+}
+function pushHistory(meds, findingsCount, worstSeverity){
+  const hist = getHistory();
+  hist.unshift({
+    meds, findingsCount, worstSeverity,
+    at: new Date().toISOString(),
+  });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 8)));
+  renderHistory();
 }
 function renderHistory(){
   const hist = getHistory();
@@ -375,7 +385,7 @@ function renderHistory(){
     historyList.innerHTML = `<div class="history-empty">${t('historyEmpty')}</div>`;
   } else {
     historyList.innerHTML = hist.map(h => {
-      const dot = h.worst_severity === 'danger' ? 'danger' : h.worst_severity === 'caution' ? 'caution' : 'safe';
+      const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
       const when = new Date(h.at);
       const timeStr = when.toLocaleDateString(undefined, {month:'short', day:'numeric'}) + ' · ' +
         when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
@@ -383,7 +393,7 @@ function renderHistory(){
         <span class="history-dot ${dot}"></span>
         <span class="history-text">
           <span class="history-meds">${h.meds.join(', ')}</span>
-          <span class="history-meta">${timeStr} · ${h.findings_count ? h.findings_count + ' finding' + (h.findings_count>1?'s':'') : 'all clear'}</span>
+          <span class="history-meta">${timeStr} · ${h.findingsCount ? h.findingsCount + ' finding' + (h.findingsCount>1?'s':'') : 'all clear'}</span>
         </span>
       </button>`;
     }).join('');
@@ -394,7 +404,7 @@ function renderHistory(){
     sidebarRecentList.innerHTML = '<div class="sidebar-empty">No checks yet</div>';
   } else {
     sidebarRecentList.innerHTML = hist.slice(0, 5).map(h => {
-      const dot = h.worst_severity === 'danger' ? 'danger' : h.worst_severity === 'caution' ? 'caution' : 'safe';
+      const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
       const when = new Date(h.at);
       const timeStr = when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
       return `<div class="sidebar-recent-item" data-meds='${JSON.stringify(h.meds)}'>
@@ -426,32 +436,6 @@ function loadFromHistory(el){
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 renderHistory();
-
-async function loadApiData(){
-  try{
-    const [medicines, interactions, history] = await Promise.all([
-      apiRequest('/medicines'),
-      apiRequest('/interactions'),
-      apiRequest('/history'),
-    ]);
-    MEDICINES = medicines.map(medicine => ({name: medicine.name, cls: medicine.cls}));
-    INTERACTIONS = interactions.map(interaction => ({
-      a: interaction.medicine_a,
-      b: interaction.medicine_b,
-      severity: interaction.severity,
-      text: interaction.text,
-      reco: interaction.reco,
-    }));
-    nameToMed = Object.fromEntries(MEDICINES.map(medicine => [medicine.name.toLowerCase(), medicine]));
-    statMeds.textContent = `${MEDICINES.length}+`;
-    statInteractions.textContent = `${INTERACTIONS.length}+`;
-    historyCache = history;
-    renderHistory();
-  } catch(error){
-    toast(error.message, 'error');
-  }
-}
-loadApiData();
 
 // ---------- prescription / strip scanner ----------
 function openScanner(){
@@ -784,14 +768,15 @@ checkBtn.addEventListener('click', () => {
   checkBtn.classList.add('loading');
   checkBtn.disabled = true;
 
-  apiRequest('/interactions/check', {
-    method: 'POST',
-    body: JSON.stringify({medicines: [...state.added]}),
-  }).then(async result => {
-    const findings = result.findings;
+  setTimeout(() => {
+    const findings = runCheck();
     renderResults(findings);
-    historyCache = await apiRequest('/history');
-    renderHistory();
+    checkBtn.classList.remove('loading');
+    checkBtn.disabled = state.added.length < 2;
+
+    const worst = findings.some(f => f.severity === 'danger') ? 'danger'
+      : findings.some(f => f.severity === 'caution') ? 'caution' : 'safe';
+    pushHistory([...state.added], findings.length, worst);
 
     if(findings.some(f => f.severity === 'danger')){
       toast('High-risk interaction found — review before combining', 'error');
@@ -800,12 +785,7 @@ checkBtn.addEventListener('click', () => {
     } else {
       toast('No known interactions found', 'success');
     }
-  }).catch(error => {
-    toast(error.message, 'error');
-  }).finally(() => {
-    checkBtn.classList.remove('loading');
-    checkBtn.disabled = state.added.length < 2;
-  });
+  }, 450);
 });
 
 // Repaint generated content when the user changes language.

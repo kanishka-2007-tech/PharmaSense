@@ -35,7 +35,7 @@
     </div>
 
     <div class="auth-side-note">
-      Built as a portfolio project. Your account is securely stored by the PharmaSense API.
+      Built as a portfolio project. Accounts and data on this demo live only in your browser — nothing is sent to a server.
     </div>
   </div>
 
@@ -93,7 +93,6 @@
 
 </div>
 
-<script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/toast.js"></script>
 <script>
@@ -146,32 +145,30 @@
     err.classList.add('show');
   }
 
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
     clearErrors();
 
     submitBtn.classList.add('loading');
     submitBtn.disabled = true;
 
-    try{
-      const result = await signup({
+    setTimeout(() => {
+      const result = signup({
         name: nameInput.value,
         email: emailInput.value,
         password: passwordInput.value,
       });
+
       if(result.ok){
         toast('Account created — welcome!', 'success');
-        window.location.href = 'index.html';
+        setTimeout(() => window.location.href = 'index.html', 500);
       } else {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
         showError(result.field, result.message);
         document.getElementById(result.field)?.focus();
       }
-    } catch(error){
-      toast(error.message, 'error');
-    } finally {
-      submitBtn.classList.remove('loading');
-      submitBtn.disabled = false;
-    }
+    }, 400);
   });
 </script>
 </body>

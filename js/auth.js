@@ -1,19 +1,46 @@
 /* =======================================================
-   PharmaSense API-backed authentication.
+   Client-side auth (DEMO ONLY).
+   Users and sessions live in localStorage so this project runs
+   with zero backend. This is NOT secure — do not reuse this
+   pattern, or a real password, in production. A real build
+   would hash+salt server-side (e.g. bcrypt) and issue a signed
+   session token (e.g. JWT) from an API instead.
    ======================================================= */
+
+const AUTH_USERS_KEY = "ps_users";
 const AUTH_SESSION_KEY = "ps_session";
 const AUTH_LAST_EMAIL_KEY = "ps_last_email";
 
+// Small non-cryptographic hash — good enough to avoid storing
+// plaintext passwords in a demo, not good enough for real security.
+function demoHash(str){
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++){
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h1 >>> 0).toString(16).padStart(8, "0") + (h2 >>> 0).toString(16).padStart(8, "0");
+}
+
+function getUsers(){
+  try{ return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveUsers(users){
+  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+}
+
 function getSession(){
   try{
+    // Keep the login across browser visits. Older builds stored this in
+    // sessionStorage, so migrate an existing session the first time it is read.
     const stored = localStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_SESSION_KEY);
     if(!stored) return null;
 
     const session = JSON.parse(stored);
-    if(!session.token || !session.name || !session.email){
-      clearSession();
-      return null;
-    }
     if(!localStorage.getItem(AUTH_SESSION_KEY)){
       localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
       sessionStorage.removeItem(AUTH_SESSION_KEY);
@@ -34,65 +61,48 @@ function clearSession(){
   sessionStorage.removeItem(AUTH_SESSION_KEY);
 }
 
-async function signup({name, email, password}){
-  const trimmedName = name.trim();
+/**
+ * Creates a new account.
+ * @returns {{ok:true}|{ok:false, field:string, message:string}}
+ */
+function signup({name, email, password}){
+  const users = getUsers();
   const normalizedEmail = email.trim().toLowerCase();
 
-  if(!trimmedName) return {ok:false, field:"name", message:"Enter your name."};
+  if(!name.trim()) return {ok:false, field:"name", message:"Enter your name."};
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))
     return {ok:false, field:"email", message:"Enter a valid email address."};
+  if(users.some(u => u.email === normalizedEmail))
+    return {ok:false, field:"email", message:"An account with this email already exists."};
   if(password.length < 8)
     return {ok:false, field:"password", message:"Password must be at least 8 characters."};
 
-  try{
-    const response = await apiRequest('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({name: trimmedName, email: normalizedEmail, password}),
-    });
-    setSession({
-      token: response.access_token,
-      name: response.user.name,
-      email: response.user.email,
-      loginAt: new Date().toISOString(),
-    });
-    return {ok:true};
-  } catch(error){
-    if(error.status === 409) return {ok:false, field:"email", message:error.message};
-    if(error.status){
-      const field = /\bname\b/i.test(error.message) ? "name"
-        : /\bpassword\b|\bpass(word)?\b/i.test(error.message) ? "password" : "email";
-      return {ok:false, field, message:error.message};
-    }
-    throw error;
-  }
+  users.push({
+    name: name.trim(),
+    email: normalizedEmail,
+    passwordHash: demoHash(password),
+    createdAt: new Date().toISOString(),
+  });
+  saveUsers(users);
+  setSession({name: name.trim(), email: normalizedEmail, loginAt: new Date().toISOString()});
+  return {ok:true};
 }
 
-async function login({email, password}){
+/**
+ * Logs an existing user in.
+ * @returns {{ok:true}|{ok:false, field:string, message:string}}
+ */
+function login({email, password}){
+  const users = getUsers();
   const normalizedEmail = email.trim().toLowerCase();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))
-    return {ok:false, field:"email", message:"Enter a valid email address."};
-  if(!password) return {ok:false, field:"password", message:"Enter your password."};
+  const user = users.find(u => u.email === normalizedEmail);
 
-  try{
-    const response = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({email: normalizedEmail, password}),
-    });
-    setSession({
-      token: response.access_token,
-      name: response.user.name,
-      email: response.user.email,
-      loginAt: new Date().toISOString(),
-    });
-    return {ok:true};
-  } catch(error){
-    if(error.status === 401) return {ok:false, field:"password", message:"Email or password is incorrect."};
-    if(error.status){
-      const field = /\bpassword\b|\bpass(word)?\b/i.test(error.message) ? "password" : "email";
-      return {ok:false, field, message:error.message};
-    }
-    throw error;
-  }
+  if(!user) return {ok:false, field:"email", message:"No account found with this email."};
+  if(user.passwordHash !== demoHash(password))
+    return {ok:false, field:"password", message:"Incorrect password."};
+
+  setSession({name: user.name, email: user.email, loginAt: new Date().toISOString()});
+  return {ok:true};
 }
 
 function logout(){
