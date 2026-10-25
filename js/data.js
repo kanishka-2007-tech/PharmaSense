@@ -4,7 +4,7 @@
    this with a live source such as RxNorm or the openFDA API.
    ======================================================= */
 
-const MEDICINES = [
+let MEDICINES = [
   {name:"Dolo", cls:"Paracetamol (Pain & Fever Relief)"},
   {name:"Paracetamol", cls:"Pain & Fever Relief"},
   {name:"Warfarin", cls:"Anticoagulant"},
@@ -50,7 +50,7 @@ const MEDICINES = [
   {name:"Losartan", cls:"ARB"},
 ];
 
-const INTERACTIONS = [
+let INTERACTIONS = [
   {a:"warfarin", b:"aspirin", severity:"danger",
     text:"Both reduce the blood's ability to clot, aspirin through platelets and warfarin through clotting factors. Taken together, the bleeding risk stacks rather than staying flat — this combination is a leading cause of hospital admissions for internal bleeding.",
     reco:"Needs direct doctor supervision. Watch for unusual bruising, black stools, or bleeding gums and seek care immediately if they appear."},

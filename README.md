@@ -32,19 +32,13 @@ especially in rural areas with fewer pharmacists per capita.
 
 ## Tech stack
 
-Plain HTML/CSS/JS — no build step, no framework, runs by opening
-`index.html` (or via `npx serve`, see below). Deliberately dependency-light
-so the whole thing is easy to read, extend, and deploy for free.
-
-- **Auth**: client-side demo auth (`js/auth.js`) — accounts and persistent sessions
-  live in `localStorage`. **This is not secure and is not
-  meant to be** — it exists so the project runs with zero backend.
-- **Data**: `js/data.js` holds the medicine list and interaction pairs as
-  plain JS objects.
-- **Logic**: `js/app.js` handles sidebar, search, chip management, the
-  interaction check itself, and history.
-- **Styling**: `css/styles.css` (design system + sidebar layout),
-  `css/app.css` (checker-specific UI), `css/auth.css` (login/signup layout).
+- **Frontend**: Plain HTML/CSS/JavaScript, served locally with `npx serve`.
+- **Backend**: FastAPI with SQLAlchemy and PostgreSQL.
+- **Authentication**: bcrypt password hashes and signed JWT bearer tokens.
+- **Data**: The curated medicine and interaction catalog is seeded into PostgreSQL
+  from `backend/seed_data.json` on first startup.
+- **History**: Authenticated checks are evaluated by the API and stored per user.
+- **API docs**: Interactive Swagger UI at `http://localhost:8000/docs`.
 
 ## Project structure
 
@@ -53,14 +47,21 @@ PharmaSense/
 ├── index.html          # Main checker app (protected — redirects to login)
 ├── login.html
 ├── signup.html
+├── backend/
+│   ├── main.py           # FastAPI routes, models, auth, and interaction checks
+│   ├── requirements.txt
+│   ├── seed_data.json    # Curated catalog copied from js/data.js
+│   └── .env.example
+├── docker-compose.yml    # Local PostgreSQL
 ├── css/
 │   ├── styles.css       # Design system, sidebar layout, shared components
 │   ├── app.css           # Checker-specific UI styles
 │   └── auth.css          # Split-panel login/signup layout
 ├── js/
+│   ├── api.js            # API client and bearer-token handling
 │   ├── auth.js           # Signup / login / session guard / logout
-│   ├── data.js           # Medicine + interaction dataset
-│   ├── app.js            # Sidebar + checker logic + history
+│   ├── data.js           # Built-in catalog fallback
+│   ├── app.js            # Sidebar + checker UI + API-backed history
 │   └── toast.js          # Toast notification helper
 ├── assets/
 │   └── favicon.svg
@@ -69,18 +70,66 @@ PharmaSense/
 
 ## Running it locally
 
-No build step needed — but browsers restrict some features (like
-`localStorage` in certain setups) on the raw `file://` protocol, so a tiny
-local server is the safer way to run it:
+You need Python 3.11+ and Docker Desktop (or another local PostgreSQL 16
+instance). Start PostgreSQL from the repository root:
 
 ```bash
-cd PharmaSense
-npx serve .
-# or: python3 -m http.server 5500
+docker compose up -d db
 ```
 
-Then open the printed local URL, sign up with any name/email/password
-(8+ characters), and start adding medicines.
+In PowerShell, create the environment, install the backend dependencies, and
+copy the example configuration:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r backend\requirements.txt
+Copy-Item backend\.env.example backend\.env
+```
+
+Replace `JWT_SECRET_KEY` in `backend\.env` with a private random value. For
+example, generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+Then start FastAPI from the repository root:
+
+```powershell
+python -m uvicorn main:app --reload --app-dir backend
+```
+
+In a second terminal, serve the frontend on a CORS-allowed origin:
+
+```powershell
+npx serve . -l 5500
+```
+
+Open the URL printed by `serve`, create an account, and start checking
+medicines. The first API startup creates the tables and seeds the catalog.
+Existing check history is kept in PostgreSQL and is scoped to the signed-in
+user.
+
+To run the backend API tests, install the test dependencies and run:
+
+```powershell
+pip install -r backend\requirements-dev.txt
+python -m pytest backend\tests
+```
+
+### API endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/auth/signup` | Create an account and issue a JWT |
+| `POST` | `/api/auth/login` | Verify credentials and issue a JWT |
+| `GET`, `PATCH` | `/api/users/me` | Read or update the signed-in user's profile |
+| `GET` | `/api/medicines` | List/search the medicine catalog |
+| `GET` | `/api/interactions` | List curated interaction pairs |
+| `POST` | `/api/interactions/check` | Check medicines and save the result |
+| `GET` | `/api/history` | List the user's recent checks |
+| `GET` | `/api/history/{id}` | Read one of the user's checks |
+| `GET` | `/api/health` | Check API availability |
+
+Except for signup, login, catalog, and health routes, requests require
+`Authorization: Bearer <token>`. Set `CORS_ORIGINS` and `DATABASE_URL` in
+`backend/.env` when using non-default frontend or database addresses.
 
 ## Ideas to extend this further
 
@@ -91,11 +140,7 @@ Then open the printed local URL, sign up with any name/email/password
    drug interaction/label data.
 3. **Add OCR** — [Tesseract.js](https://tesseract.projectnaptha.com/) runs
    client-side, so users could photograph a prescription instead of typing.
-4. **Add a real backend** — move users + interaction data into Postgres,
-   wrap it in a small FastAPI or Express service, hash passwords with
-   bcrypt, and issue JWTs. Turns this from a frontend demo into a full-stack
-   project.
-5. **Add multilingual support** — Hindi, Tamil, etc. for broader accessibility
+4. **Add multilingual support** — Hindi, Tamil, etc. for broader accessibility
    in India.
 
 ## Disclaimer
@@ -103,3 +148,6 @@ Then open the printed local URL, sign up with any name/email/password
 This is a portfolio project built on a small, curated subset of
 well-documented interactions. It does not cover every medicine or every
 interaction and is **not a substitute for a pharmacist or doctor**.
+The included JWT secret and database credentials are for local development
+only. Before deployment, configure strong secrets, HTTPS, a restricted CORS
+allowlist, and production database migrations/backups.
