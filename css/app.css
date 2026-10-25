@@ -437,6 +437,68 @@
 .checkbox-label{ flex-direction: row !important; align-items: flex-start; font-weight: 400 !important; line-height: 1.45; }
 .checkbox-label input{ width: auto; margin-top: 3px; }
 .form-note{ margin: -4px 0 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.5; }
+.specialist-urgent{
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #e4aaa0;
+  border-radius: var(--radius-sm);
+  background: var(--danger-bg);
+  color: #8f2d1d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.specialist-urgent strong{ display: block; margin-bottom: 3px; }
+.specialist-result{
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--safe-border);
+  border-radius: var(--radius-sm);
+  background: var(--safe-bg);
+}
+.specialist-result h3{ margin: 0 0 8px; color: var(--ink); font: 700 19px var(--font-display); }
+.specialist-result p{ margin: 6px 0 0; color: #374151; font-size: 13.5px; line-height: 1.55; }
+.specialist-disclaimer{ margin: 18px 0 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.6; }
+.specialist-disclaimer strong{ color: var(--ink); }
+.dashboard-section{ display:none; }
+.dashboard-section.visible{ display:block; }
+.dashboard-metrics{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; margin:20px 0; }
+.dashboard-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; margin-bottom:14px; }
+.dashboard-card{ min-width:0; padding:20px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card); box-shadow:var(--shadow-sm); }
+.dashboard-label,.dashboard-detail{ display:block; color:var(--ink-soft); font-size:12px; line-height:1.5; }
+.dashboard-value{ display:block; margin:6px 0; color:var(--ink); font:700 30px var(--font-display); }
+.dashboard-card h3{ margin:0; color:var(--ink); font:700 18px var(--font-display); }
+.dashboard-caption{ margin:5px 0 14px; color:var(--ink-soft); font-size:12px; line-height:1.5; }
+.dashboard-progress{ height:9px; margin-top:14px; overflow:hidden; border-radius:99px; background:var(--paper-line); }
+.dashboard-progress span{ display:block; width:0; height:100%; border-radius:inherit; background:var(--safe); transition:width .2s; }
+.dashboard-chart{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:8px; min-height:126px; align-items:end; }
+.check-chart-column{ display:grid; grid-template-rows:18px 1fr 18px; gap:5px; height:126px; text-align:center; }
+.check-chart-count,.check-chart-day{ color:var(--ink-soft); font-size:10px; }
+.check-chart-track{ display:flex; align-items:flex-end; justify-content:center; height:100%; border-bottom:1px solid var(--border); }
+.check-chart-track span{ display:block; width:min(22px, 75%); min-height:0; border-radius:4px 4px 0 0; background:var(--primary); }
+.severity-chart{ display:flex; height:18px; overflow:hidden; border-radius:99px; background:var(--paper-line); }
+.severity-segment{ height:100%; }
+.severity-segment.danger,.severity-key.danger{ background:var(--danger); }
+.severity-segment.caution,.severity-key.caution{ background:var(--caution); }
+.severity-segment.safe,.severity-key.safe{ background:var(--safe); }
+.severity-legend{ display:grid; gap:8px; margin-top:14px; }
+.severity-legend span{ display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-size:12px; }
+.severity-legend strong{ margin-left:auto; color:var(--ink); }
+.severity-key{ width:9px; height:9px; border-radius:50%; }
+.medication-tracker{ margin-top:14px; }
+.tracker-form{ margin:16px 0 10px; }
+.dose-schedule-list{ display:grid; gap:8px; margin:14px 0; }
+.dose-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--paper); }
+.dose-info strong,.dose-info span{ display:block; }
+.dose-info strong{ color:var(--ink); font-size:14px; }
+.dose-info span{ margin-top:3px; color:var(--ink-soft); font-size:11px; }
+.dose-actions{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+.dose-status-button,.dose-remove-button{ padding:7px 9px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); color:var(--ink); background:var(--card); cursor:pointer; font:500 11px var(--font-body); }
+.dose-status-button:hover:not(:disabled){ border-color:var(--safe); color:var(--safe); }
+.dose-status-button.missed:hover:not(:disabled){ border-color:var(--danger); color:var(--danger); }
+.dose-status-button:disabled{ opacity:.55; cursor:default; }
+.dose-remove-button{ color:var(--ink-soft); }
+.dose-remove-button:hover{ border-color:var(--danger); color:var(--danger); }
+.tracker-empty{ margin:0; color:var(--ink-soft); font-size:13px; }
 
 /* ---------- floating chatbot ---------- */
 .chatbot-widget{ position: fixed; right: 24px; bottom: 24px; z-index: 100; }
@@ -488,5 +550,8 @@
   .history-section{ padding: 16px; }
   .service-section{ padding: 20px 16px; }
   .form-grid{ grid-template-columns: 1fr; }
+  .dashboard-metrics,.dashboard-grid{ grid-template-columns:1fr; }
+  .dose-row{ align-items:flex-start; flex-direction:column; }
+  .dose-actions{ justify-content:flex-start; }
   .chatbot-widget{ right: 16px; bottom: 16px; }
 }

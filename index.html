@@ -27,6 +27,10 @@
   </div>
 
   <nav class="sidebar-nav">
+    <a href="#dashboardSection" class="nav-item" data-page="dashboard">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg>
+      <span>Dashboard</span>
+    </a>
     <a href="index.html" class="nav-item active" data-page="checker">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <span>Interaction Checker</span>
@@ -38,6 +42,10 @@
     <a href="#about-section" class="nav-item" data-page="about">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       <span>About &amp; Help</span>
+    </a>
+    <a href="#specialistGuideSection" class="nav-item" data-page="specialist-guide">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5c0 5-8.5 12-8.5 12s-8.5-7-8.5-12a4.5 4.5 0 0 1 8.5-2.4 4.5 4.5 0 0 1 8.5 2.4Z"/><path d="M8 11h2l1-2 2 4 1-2h2"/></svg>
+      <span>Symptom Guide</span>
     </a>
     <a href="#consultationSection" class="nav-item" data-page="consultation">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-4.1-1.05L3 20l1.05-3.9A8.5 8.5 0 1 1 20 11.5z"/><path d="M8 12h8M12 8v8"/></svg>
@@ -217,6 +225,62 @@
       <div class="history-grid" id="historyList"></div>
     </section>
 
+    <section class="service-section dashboard-section" id="dashboardSection">
+      <div class="section-header">
+        <h2>Your Dashboard</h2>
+        <p>A quick summary of your tracked medication routine and recent interaction checks.</p>
+      </div>
+      <div class="dashboard-metrics">
+        <article class="dashboard-card">
+          <span class="dashboard-label">Dose adherence · last 7 days</span>
+          <strong class="dashboard-value" id="adherenceValue">—</strong>
+          <span class="dashboard-detail" id="adherenceDetail">Add a scheduled dose to begin tracking.</span>
+          <div class="dashboard-progress" id="adherenceProgress" role="img" aria-label="No medication doses tracked yet">
+            <span id="adherenceProgressBar"></span>
+          </div>
+          <span class="dashboard-detail">Past-due doses not marked taken count as missed; future doses are excluded.</span>
+        </article>
+        <article class="dashboard-card">
+          <span class="dashboard-label">Total interaction checks</span>
+          <strong class="dashboard-value" id="dashboardCheckCount">0</strong>
+          <span class="dashboard-detail">Counted in this browser for your account.</span>
+        </article>
+        <article class="dashboard-card">
+          <span class="dashboard-label">Most common check result</span>
+          <strong class="dashboard-value" id="dashboardCommonSeverity">—</strong>
+          <span class="dashboard-detail" id="dashboardSeverityDetail">Run a medicine check to see a summary.</span>
+        </article>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card dashboard-chart-card">
+          <h3>Interaction checks · last 7 days</h3>
+          <p class="dashboard-caption">Daily checks from your latest 8 saved results.</p>
+          <div class="dashboard-chart" id="checkChart" role="img" aria-label="No checks in the last 7 days"></div>
+        </article>
+        <article class="dashboard-card dashboard-chart-card">
+          <h3>Most common result</h3>
+          <p class="dashboard-caption">Severity distribution across your latest 8 saved results.</p>
+          <div class="severity-chart" id="severityChart" role="img" aria-label="No saved checks yet"></div>
+          <div class="severity-legend" id="severityLegend"></div>
+        </article>
+      </div>
+
+      <article class="dashboard-card medication-tracker">
+        <h3>Medication dose tracker</h3>
+        <p class="dashboard-caption">Add a daily dose schedule, then record doses as taken or missed.</p>
+        <form class="service-form tracker-form" id="doseScheduleForm">
+          <div class="form-grid">
+            <label for="doseMedicine">Medicine name<input id="doseMedicine" name="medicine" type="text" maxlength="120" placeholder="e.g. Metformin" required></label>
+            <label for="doseTime">Daily dose time<input id="doseTime" name="time" type="time" required></label>
+          </div>
+          <button class="btn btn-primary" type="submit">Add daily dose</button>
+        </form>
+        <div class="dose-schedule-list" id="doseScheduleList" aria-live="polite"></div>
+        <p class="form-note">This tracker is for personal record-keeping only. Follow your prescriber’s instructions; it does not recommend or change doses. Your entries are saved in this browser for your account.</p>
+      </article>
+    </section>
+
     <section class="about-section" id="aboutSection">
       <div class="about-card">
         <h3>The Problem</h3>
@@ -230,6 +294,45 @@
         <h3>Disclaimer</h3>
         <p>This is a portfolio demonstration built on a small curated dataset. It does not cover every medicine or interaction and is <strong>not a substitute for a pharmacist or doctor</strong>. Always confirm with a qualified professional.</p>
       </div>
+    </section>
+
+    <section class="service-section" id="specialistGuideSection">
+      <div class="section-header">
+        <h2>Symptom-to-Specialist Guide</h2>
+        <p>Choose the area of concern to see which kind of clinician may be a reasonable first contact.</p>
+      </div>
+      <div class="specialist-urgent" role="alert">
+        <strong>Need help right now?</strong>
+        For severe or sudden symptoms such as chest pain, serious difficulty breathing, fainting, signs of stroke, a severe allergic reaction, uncontrolled bleeding, or immediate risk of harm to yourself or someone else, contact your local emergency service now. Do not wait for this guide.
+      </div>
+      <form class="service-form" id="specialistGuideForm">
+        <label for="symptomArea">What area would you like guidance about?
+          <select id="symptomArea" name="symptomArea" required>
+            <option value="">Choose an area</option>
+            <option value="general">General, fever, or unsure</option>
+            <option value="skin">Skin, hair, or nails</option>
+            <option value="eyes">Eyes or vision</option>
+            <option value="ears-nose-throat">Ears, nose, or throat</option>
+            <option value="teeth">Teeth or gums</option>
+            <option value="digestive">Stomach or digestion</option>
+            <option value="heart">Heart or circulation concerns</option>
+            <option value="breathing">Cough or breathing concerns</option>
+            <option value="bones-joints">Bones, joints, or muscles</option>
+            <option value="headaches">Headaches, dizziness, or nerves</option>
+            <option value="urinary">Urinary or kidney concerns</option>
+            <option value="reproductive">Menstrual or reproductive health</option>
+            <option value="mental-wellbeing">Mood, anxiety, or sleep</option>
+            <option value="child">A child’s health</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" type="submit">Find a starting point</button>
+      </form>
+      <div class="specialist-result" id="specialistResult" role="status" aria-live="polite" hidden>
+        <h3 id="specialistResultTitle"></h3>
+        <p id="specialistResultReason"></p>
+        <p id="specialistResultNext"></p>
+      </div>
+      <p class="specialist-disclaimer"><strong>Important:</strong> This guide does not diagnose, assess urgency, or replace medical advice. Symptoms can have many causes. It only suggests a possible starting point; a primary-care clinician can help decide whether a specialist is appropriate. If you are concerned or symptoms are worsening, contact a qualified clinician.</p>
     </section>
 
     <section class="service-section" id="consultationSection">
@@ -288,6 +391,7 @@
       <div class="chatbot-message chatbot-message-assistant">Hi! I can help you find the interaction checker, request a consultation, or request medicine delivery. You can type or use the microphone.</div>
     </div>
     <div class="chatbot-links">
+      <button data-chat-action="specialist-guide">Find a specialist</button>
       <button data-chat-action="consultation">Book a consultation</button>
       <button data-chat-action="delivery">Request delivery</button>
       <button data-chat-action="checker">Check interactions</button>

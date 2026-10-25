@@ -29,6 +29,11 @@ especially in rural areas with fewer pharmacists per capita.
 - **Accounts + history** — sign up, sign in, and revisit your last 8 checks
 - **Large text toggle** — accessibility feature for elderly users
 - **Emergency info** — sidebar includes emergency guidance
+- **Symptom-to-specialist guide** — general care-navigation suggestions, with
+  an emergency warning and a clear non-diagnostic disclaimer
+- **Dashboard with charts** — seven-day medication adherence tracking, total
+  interaction-check counts, and recent check-result severity summaries. Dose
+  schedules and check totals are stored locally in this browser.
 
 ## Tech stack
 

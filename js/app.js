@@ -45,6 +45,8 @@ const welcomeBanner = document.getElementById('welcomeBanner');
 const historyList = document.getElementById('historyList');
 const historyPanel = document.getElementById('historyPanel');
 const fontSizeBtn = document.getElementById('fontSizeBtn');
+const dashboardSection = document.getElementById('dashboardSection');
+const specialistGuideSection = document.getElementById('specialistGuideSection');
 const consultationSection = document.getElementById('consultationSection');
 const deliverySection = document.getElementById('deliverySection');
 const scanMedicineBtn = document.getElementById('scanMedicineBtn');
@@ -92,9 +94,12 @@ navItems.forEach(item => {
     item.classList.add('active');
 
     const page = item.dataset.page;
+    dashboardSection.classList.toggle('visible', page === 'dashboard');
     aboutSection.classList.toggle('visible', page === 'about');
+    specialistGuideSection.classList.toggle('visible', page === 'specialist-guide');
     consultationSection.classList.toggle('visible', page === 'consultation');
     deliverySection.classList.toggle('visible', page === 'delivery');
+    if(page === 'dashboard') renderDashboard();
     document.querySelector('.checker-section').style.display = page === 'checker' ? 'block' : 'none';
     resultsEl.style.display = page === 'checker' && resultsListEl.innerHTML ? 'block' : 'none';
     historyPanel.style.display = page === 'history' ? 'block' : page === 'checker' && (state.added.length > 0 || getHistory().length > 0) ? 'block' : 'none';
@@ -111,6 +116,306 @@ function handleServiceRequest(form, message){
 }
 handleServiceRequest(document.getElementById('consultationForm'), () => t('consultationReceived'));
 handleServiceRequest(document.getElementById('deliveryForm'), () => t('deliveryReceived'));
+
+// ---------- dashboard and dose tracking ----------
+const doseStorageKey = `ps_dose_tracker_${session.email}`;
+const doseScheduleList = document.getElementById('doseScheduleList');
+const severityOrder = ['danger', 'caution', 'safe'];
+const severityNames = {danger: 'High risk', caution: 'Caution', safe: 'No known interaction'};
+
+function localDateKey(date){
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+}
+function readDoseData(){
+  try{
+    const data = JSON.parse(localStorage.getItem(doseStorageKey)) || {};
+    return {
+      schedules: Array.isArray(data.schedules) ? data.schedules : [],
+      logs: data.logs && typeof data.logs === 'object' ? data.logs : {},
+    };
+  } catch(error){
+    console.error('Could not read saved dose tracker data.', error);
+    toast('Could not read your saved dose tracker. Your existing data has not been changed.', 'error');
+    return {schedules: [], logs: {}};
+  }
+}
+function saveDoseData(data){
+  try{
+    localStorage.setItem(doseStorageKey, JSON.stringify(data));
+  } catch(error){
+    console.error('Could not save dose tracker data.', error);
+    toast('Could not save your dose tracker. Check your browser storage and try again.', 'error');
+    return false;
+  }
+  return true;
+}
+function doseLogKey(scheduleId, dateKey){
+  return `${dateKey}:${scheduleId}`;
+}
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+function getDoseStatus(data, schedule, dateKey){
+  const logged = data.logs[doseLogKey(schedule.id, dateKey)];
+  if(logged === 'taken' || logged === 'missed') return logged;
+  return 'pending';
+}
+function getAdherenceSummary(data, now = new Date()){
+  const today = localDateKey(now);
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  let taken = 0;
+  let due = 0;
+
+  data.schedules.forEach(schedule => {
+    const created = new Date(schedule.createdAt);
+    const createdDay = new Date(created.getFullYear(), created.getMonth(), created.getDate());
+    const firstDay = createdDay > start ? createdDay : start;
+    const lastDay = schedule.archivedAt
+      ? new Date(new Date(schedule.archivedAt).getFullYear(), new Date(schedule.archivedAt).getMonth(), new Date(schedule.archivedAt).getDate())
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endDay = lastDay < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      ? lastDay : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    for(let day = new Date(firstDay); day <= endDay; day.setDate(day.getDate() + 1)){
+      const dateKey = localDateKey(day);
+      const [scheduledHours, scheduledMinutes] = schedule.time.split(':').map(Number);
+      const scheduledAtMinutes = scheduledHours * 60 + scheduledMinutes;
+      if(dateKey === localDateKey(created) && scheduledAtMinutes < created.getHours() * 60 + created.getMinutes()) continue;
+      if(schedule.archivedAt){
+        const archivedAt = new Date(schedule.archivedAt);
+        if(dateKey === localDateKey(archivedAt) && scheduledAtMinutes > archivedAt.getHours() * 60 + archivedAt.getMinutes()) continue;
+      }
+      if(dateKey === today){
+        if(scheduledAtMinutes > now.getHours() * 60 + now.getMinutes()) continue;
+      }
+      due++;
+      if(getDoseStatus(data, schedule, dateKey) === 'taken') taken++;
+    }
+  });
+
+  return {taken, due, rate: due ? Math.round(taken / due * 100) : null};
+}
+function renderDoseSchedules(){
+  const data = readDoseData();
+  const today = localDateKey(new Date());
+  const active = data.schedules.filter(schedule => !schedule.archivedAt);
+  if(!active.length){
+    doseScheduleList.innerHTML = '<p class="tracker-empty">No daily doses added yet.</p>';
+    return;
+  }
+
+  doseScheduleList.innerHTML = active.map(schedule => {
+    const status = getDoseStatus(data, schedule, today);
+    const timeParts = schedule.time.split(':');
+    const displayTime = new Date(2000, 0, 1, Number(timeParts[0]), Number(timeParts[1]))
+      .toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+    const [hours, minutes] = timeParts.map(Number);
+    const isFuture = hours * 60 + minutes > new Date().getHours() * 60 + new Date().getMinutes();
+    const statusLabel = status === 'taken' ? 'Recorded as taken'
+      : status === 'missed' ? 'Recorded as missed'
+      : isFuture ? 'Upcoming' : 'Awaiting your update';
+    return `<div class="dose-row">
+      <div class="dose-info"><strong>${escapeHtml(schedule.medicine)}</strong><span>${displayTime} · ${statusLabel}</span></div>
+      <div class="dose-actions">
+        <button type="button" class="dose-status-button" data-dose-status="taken" data-schedule-id="${escapeHtml(schedule.id)}" ${status === 'taken' || isFuture ? 'disabled' : ''}>Taken</button>
+        <button type="button" class="dose-status-button missed" data-dose-status="missed" data-schedule-id="${escapeHtml(schedule.id)}" ${status === 'missed' || isFuture ? 'disabled' : ''}>Missed</button>
+        <button type="button" class="dose-remove-button" data-remove-schedule="${escapeHtml(schedule.id)}" aria-label="Remove ${escapeHtml(schedule.medicine)} schedule">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderDashboard(){
+  const data = readDoseData();
+  const adherence = getAdherenceSummary(data);
+  const history = getHistory();
+  const rate = adherence.rate;
+  document.getElementById('adherenceValue').textContent = rate === null ? '—' : `${rate}%`;
+  document.getElementById('adherenceDetail').textContent = rate === null
+    ? 'No scheduled doses were due in the last 7 days.'
+    : `${adherence.taken} of ${adherence.due} due doses recorded as taken.`;
+  document.getElementById('adherenceProgressBar').style.width = `${rate ?? 0}%`;
+  document.getElementById('adherenceProgress').setAttribute(
+    'aria-label',
+    rate === null ? 'No medication doses due in the last 7 days' : `Dose adherence ${rate} percent over the last 7 days`
+  );
+  document.getElementById('dashboardCheckCount').textContent = String(getTotalChecks());
+
+  const severityCounts = {danger: 0, caution: 0, safe: 0};
+  history.forEach(entry => {
+    if(severityCounts[entry.worstSeverity] !== undefined) severityCounts[entry.worstSeverity]++;
+  });
+  const commonSeverity = severityOrder.reduce((mostCommon, severity) =>
+    severityCounts[severity] > severityCounts[mostCommon] ? severity : mostCommon, 'safe');
+  const severityTitle = history.length ? severityNames[commonSeverity] : '—';
+  document.getElementById('dashboardCommonSeverity').textContent = severityTitle;
+  document.getElementById('dashboardSeverityDetail').textContent = history.length
+    ? `${severityCounts[commonSeverity]} of ${history.length} recent checks.`
+    : 'Run a medicine check to see a summary.';
+
+  const today = new Date();
+  const days = Array.from({length: 7}, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6 + index);
+    return {date, key: localDateKey(date), count: 0};
+  });
+  history.forEach(entry => {
+    const day = days.find(item => item.key === localDateKey(new Date(entry.at)));
+    if(day) day.count++;
+  });
+  const maxChecks = Math.max(1, ...days.map(day => day.count));
+  document.getElementById('checkChart').innerHTML = days.map(day => `
+    <div class="check-chart-column" aria-label="${day.key}: ${day.count} checks">
+      <span class="check-chart-count">${day.count || ''}</span>
+      <div class="check-chart-track"><span style="height:${day.count ? Math.max(8, day.count / maxChecks * 100) : 0}%"></span></div>
+      <span class="check-chart-day">${day.date.toLocaleDateString(undefined, {weekday:'short'})}</span>
+    </div>
+  `).join('');
+  document.getElementById('checkChart').setAttribute('aria-label', `${days.reduce((total, day) => total + day.count, 0)} checks in the last 7 days`);
+
+  const severityChart = document.getElementById('severityChart');
+  severityChart.innerHTML = history.length ? severityOrder.map(severity => {
+    const width = severityCounts[severity] / history.length * 100;
+    return width ? `<span class="severity-segment ${severity}" style="width:${width}%" title="${severityNames[severity]}: ${severityCounts[severity]}"></span>` : '';
+  }).join('') : '';
+  severityChart.setAttribute('aria-label', history.length
+    ? severityOrder.map(severity => `${severityNames[severity]}: ${severityCounts[severity]}`).join(', ')
+    : 'No saved checks yet');
+  document.getElementById('severityLegend').innerHTML = history.length ? severityOrder.map(severity =>
+    `<span><i class="severity-key ${severity}"></i>${severityNames[severity]} <strong>${severityCounts[severity]}</strong></span>`
+  ).join('') : '<span>No checks recorded yet.</span>';
+  renderDoseSchedules();
+}
+
+document.getElementById('doseScheduleForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const medicine = form.elements.medicine.value.trim();
+  const time = form.elements.time.value;
+  if(!medicine || !time) return;
+
+  const data = readDoseData();
+  if(data.schedules.some(schedule => !schedule.archivedAt && schedule.medicine.toLowerCase() === medicine.toLowerCase() && schedule.time === time)){
+    toast('That medicine already has a daily dose at this time.', 'info');
+    return;
+  }
+  data.schedules.push({
+    id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    medicine,
+    time,
+    createdAt: new Date().toISOString(),
+  });
+  if(!saveDoseData(data)) return;
+  form.reset();
+  renderDashboard();
+  toast('Daily dose added.', 'success');
+});
+
+doseScheduleList.addEventListener('click', event => {
+  const statusButton = event.target.closest('[data-dose-status]');
+  const removeButton = event.target.closest('[data-remove-schedule]');
+  const data = readDoseData();
+  const today = localDateKey(new Date());
+  if(statusButton){
+    const schedule = data.schedules.find(item => item.id === statusButton.dataset.scheduleId && !item.archivedAt);
+    if(!schedule) return;
+    data.logs[doseLogKey(schedule.id, today)] = statusButton.dataset.doseStatus;
+    if(saveDoseData(data)) renderDashboard();
+  } else if(removeButton){
+    const schedule = data.schedules.find(item => item.id === removeButton.dataset.removeSchedule && !item.archivedAt);
+    if(!schedule) return;
+    schedule.archivedAt = new Date().toISOString();
+    if(saveDoseData(data)) renderDashboard();
+  }
+});
+
+const specialistGuidance = {
+  general: {
+    title: 'Start with a primary-care doctor or general physician.',
+    reason: 'They can review general symptoms, your health history, and medicines, then help decide whether a specialist is needed.',
+    next: 'If you are unsure where to go, a local clinic or primary-care service is a reasonable first contact.',
+  },
+  skin: {
+    title: 'A dermatologist may be a suitable specialist.',
+    reason: 'Dermatologists care for concerns involving skin, hair, and nails.',
+    next: 'A primary-care doctor can also be a good first contact, especially if you are unsure or symptoms are changing quickly.',
+  },
+  eyes: {
+    title: 'An eye-care clinician, such as an ophthalmologist, may be suitable.',
+    reason: 'They assess eye health and vision concerns.',
+    next: 'Sudden loss of vision or a serious eye injury needs urgent medical attention.',
+  },
+  'ears-nose-throat': {
+    title: 'An ear, nose, and throat (ENT) specialist may be suitable.',
+    reason: 'ENT clinicians assess concerns involving the ears, nose, throat, and related areas.',
+    next: 'A primary-care doctor can help with initial assessment and referral where needed.',
+  },
+  teeth: {
+    title: 'A dentist may be a suitable first contact.',
+    reason: 'Dentists assess teeth, gums, and other oral-health concerns.',
+    next: 'For facial swelling with difficulty breathing or swallowing, seek emergency care.',
+  },
+  digestive: {
+    title: 'Start with a primary-care doctor; a gastroenterologist may be appropriate.',
+    reason: 'A primary-care clinician can assess digestive symptoms and decide whether a digestive-system specialist is needed.',
+    next: 'Seek urgent care for severe sudden abdominal pain, vomiting blood, or black stools.',
+  },
+  heart: {
+    title: 'Start with a clinician; a cardiologist may be appropriate after assessment.',
+    reason: 'A clinician can assess heart or circulation concerns and determine whether specialist care is needed.',
+    next: 'For chest pain, severe breathlessness, fainting, or sudden severe symptoms, contact emergency services now.',
+  },
+  breathing: {
+    title: 'Start with a primary-care doctor; a lung specialist may be appropriate.',
+    reason: 'A clinician can assess cough or breathing concerns and decide whether a pulmonologist or other specialist is needed.',
+    next: 'Severe or sudden difficulty breathing is an emergency. Contact your local emergency service now.',
+  },
+  'bones-joints': {
+    title: 'Start with a primary-care doctor; an orthopedist may be appropriate.',
+    reason: 'A clinician can assess bone, joint, or muscle concerns and determine whether an orthopedic specialist is needed.',
+    next: 'A serious injury, visible deformity, or inability to use a limb needs prompt medical assessment.',
+  },
+  headaches: {
+    title: 'Start with a primary-care doctor; a neurologist may be appropriate.',
+    reason: 'A clinician can assess headaches, dizziness, or nerve-related concerns and arrange specialist care if needed.',
+    next: 'A sudden severe headache, new weakness, trouble speaking, or sudden confusion needs emergency assessment.',
+  },
+  urinary: {
+    title: 'Start with a primary-care doctor; a urologist may be appropriate.',
+    reason: 'A clinician can assess urinary concerns and decide whether a urinary-tract specialist is needed.',
+    next: 'Seek urgent assessment for severe pain, inability to urinate, or blood in urine with feeling very unwell.',
+  },
+  reproductive: {
+    title: 'A gynecologist or primary-care doctor may be a suitable first contact.',
+    reason: 'They can discuss menstrual or reproductive-health concerns and help decide what assessment or care is appropriate.',
+    next: 'If you may be pregnant and have severe pain, heavy bleeding, or feel faint, seek urgent medical care.',
+  },
+  'mental-wellbeing': {
+    title: 'A primary-care doctor or qualified mental-health professional may help.',
+    reason: 'A doctor, psychiatrist, psychologist, or counsellor can discuss mood, anxiety, or sleep concerns and appropriate support.',
+    next: 'If you may harm yourself or someone else, contact local emergency services or a crisis support service now, and reach out to someone you trust.',
+  },
+  child: {
+    title: 'A pediatrician or primary-care doctor who sees children may be suitable.',
+    reason: 'They can assess a child’s symptoms and advise whether further specialist care is needed.',
+    next: 'For severe or rapidly worsening symptoms in a child, contact emergency services or urgent medical care.',
+  },
+};
+
+document.getElementById('specialistGuideForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const guidance = specialistGuidance[document.getElementById('symptomArea').value];
+  if(!guidance) return;
+
+  document.getElementById('specialistResultTitle').textContent = guidance.title;
+  document.getElementById('specialistResultReason').textContent = guidance.reason;
+  document.getElementById('specialistResultNext').textContent = guidance.next;
+  document.getElementById('specialistResult').hidden = false;
+});
 
 // ---------- chatbot shortcut ----------
 const chatbotToggle = document.getElementById('chatbotToggle');
@@ -273,6 +578,10 @@ function answerChatbot(rawText){
   }
   const lower = text.toLowerCase();
 
+  if(/\b(specialist|which doctor|what kind of doctor|doctor for|symptom guide)\b/.test(lower)){
+    navigateFromChat('specialist-guide', 'I’m opening the symptom-to-specialist guide. It offers general starting points, not a diagnosis.', text);
+    return;
+  }
   if(/\b(consult|consultation|doctor|speak to a doctor|medical advice|issue|problem|symptom|side effect|unwell)\b/.test(lower)){
     startConsultationFlow(text);
     return;
@@ -294,10 +603,10 @@ function answerChatbot(rawText){
     return;
   }
   if(/\b(hello|hi|hey|help)\b/.test(lower)){
-    chatbotReply(text, 'You can ask me to check medicine interactions, open a doctor consultation, or request medicine delivery.');
+    chatbotReply(text, 'You can ask me which kind of doctor to see, check medicine interactions, open a doctor consultation, or request medicine delivery.');
     return;
   }
-  chatbotReply(text, 'I can open the interaction checker, doctor consultation, or medicine delivery. Try saying “check Warfarin and Aspirin interactions.”');
+  chatbotReply(text, 'I can open the symptom-to-specialist guide, interaction checker, doctor consultation, or medicine delivery. Try saying “which doctor should I see?”');
 }
 
 chatbotForm.addEventListener('submit', event => {
@@ -364,17 +673,30 @@ document.getElementById('dismissWelcome')?.addEventListener('click', () => {
 
 // ---------- history (per user, persisted) ----------
 const HISTORY_KEY = `ps_history_${session.email}`;
+const CHECK_COUNT_KEY = `ps_check_count_${session.email}`;
 function getHistory(){
   try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
   catch(e){ return []; }
 }
+function getTotalChecks(){
+  const stored = localStorage.getItem(CHECK_COUNT_KEY);
+  if(stored === null){
+    const initialCount = getHistory().length;
+    localStorage.setItem(CHECK_COUNT_KEY, String(initialCount));
+    return initialCount;
+  }
+  const count = Number(stored);
+  return Number.isSafeInteger(count) && count >= 0 ? count : getHistory().length;
+}
 function pushHistory(meds, findingsCount, worstSeverity){
+  const totalChecks = getTotalChecks() + 1;
   const hist = getHistory();
   hist.unshift({
     meds, findingsCount, worstSeverity,
     at: new Date().toISOString(),
   });
   localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 8)));
+  localStorage.setItem(CHECK_COUNT_KEY, String(totalChecks));
   renderHistory();
 }
 function renderHistory(){
@@ -414,6 +736,7 @@ function renderHistory(){
       </div>`;
     }).join('');
   }
+  renderDashboard();
 }
 
 historyList?.addEventListener('click', (e) => {
