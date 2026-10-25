@@ -130,13 +130,18 @@ function readDoseData(){
   try{
     const data = JSON.parse(localStorage.getItem(doseStorageKey)) || {};
     return {
-      schedules: Array.isArray(data.schedules) ? data.schedules : [],
+      schedules: Array.isArray(data.schedules) ? data.schedules.map(schedule => ({
+        ...schedule,
+        unitsPerDose: Number.isFinite(Number(schedule.unitsPerDose)) && Number(schedule.unitsPerDose) > 0
+          ? Number(schedule.unitsPerDose) : 1,
+      })) : [],
+      stockBatches: Array.isArray(data.stockBatches) ? data.stockBatches : [],
       logs: data.logs && typeof data.logs === 'object' ? data.logs : {},
     };
   } catch(error){
     console.error('Could not read saved dose tracker data.', error);
     toast('Could not read your saved dose tracker. Your existing data has not been changed.', 'error');
-    return {schedules: [], logs: {}};
+    return {schedules: [], stockBatches: [], logs: {}};
   }
 }
 function saveDoseData(data){
@@ -151,6 +156,11 @@ function saveDoseData(data){
 }
 function doseLogKey(scheduleId, dateKey){
   return `${dateKey}:${scheduleId}`;
+}
+function daysUntilDate(dateKey, referenceKey){
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const [referenceYear, referenceMonth, referenceDay] = referenceKey.split('-').map(Number);
+  return Math.round((Date.UTC(year, month - 1, day) - Date.UTC(referenceYear, referenceMonth - 1, referenceDay)) / 86400000);
 }
 function escapeHtml(value){
   return String(value).replace(/[&<>"']/g, character => ({
@@ -221,12 +231,91 @@ function renderDoseSchedules(){
       : status === 'missed' ? 'Recorded as missed'
       : isFuture ? 'Upcoming' : 'Awaiting your update';
     return `<div class="dose-row">
-      <div class="dose-info"><strong>${escapeHtml(schedule.medicine)}</strong><span>${displayTime} · ${statusLabel}</span></div>
+      <div class="dose-info"><strong>${escapeHtml(schedule.medicine)}</strong><span>${displayTime} · ${statusLabel} · ${schedule.unitsPerDose} unit${schedule.unitsPerDose === 1 ? '' : 's'} per dose</span></div>
       <div class="dose-actions">
         <button type="button" class="dose-status-button" data-dose-status="taken" data-schedule-id="${escapeHtml(schedule.id)}" ${status === 'taken' || isFuture ? 'disabled' : ''}>Taken</button>
         <button type="button" class="dose-status-button missed" data-dose-status="missed" data-schedule-id="${escapeHtml(schedule.id)}" ${status === 'missed' || isFuture ? 'disabled' : ''}>Missed</button>
         <button type="button" class="dose-remove-button" data-remove-schedule="${escapeHtml(schedule.id)}" aria-label="Remove ${escapeHtml(schedule.medicine)} schedule">Remove</button>
       </div>
+    </div>`;
+  }).join('');
+}
+function getDailyUnitsByMedicine(schedules){
+  return schedules.filter(schedule => !schedule.archivedAt).reduce((totals, schedule) => {
+    const key = schedule.medicine.trim().toLowerCase();
+    totals[key] = (totals[key] || 0) + schedule.unitsPerDose;
+    return totals;
+  }, {});
+}
+function renderStockBatches(data){
+  const today = localDateKey(new Date());
+  const batches = data.stockBatches.slice().sort((a, b) =>
+    a.expiry.localeCompare(b.expiry) || a.medicine.localeCompare(b.medicine)
+  );
+  const expired = batches.filter(batch => batch.expiry < today);
+  const expiring = batches.filter(batch => batch.expiry >= today && daysUntilDate(batch.expiry, today) <= 30);
+  const warnings = [];
+  if(expired.length){
+    warnings.push(`<div class="stock-warning expired"><strong>${expired.length} expired batch${expired.length === 1 ? '' : 'es'}.</strong> ${expired.map(batch => `${escapeHtml(batch.medicine)} (${escapeHtml(batch.expiry)})`).join(', ')}. Excluded from refill estimates; ask a pharmacist about safe disposal.</div>`);
+  }
+  if(expiring.length){
+    warnings.push(`<div class="stock-warning soon"><strong>${expiring.length} batch${expiring.length === 1 ? '' : 'es'} expiring within 30 days.</strong> ${expiring.map(batch => `${escapeHtml(batch.medicine)} (${escapeHtml(batch.expiry)})`).join(', ')}.</div>`);
+  }
+  document.getElementById('stockExpiryWarnings').innerHTML = warnings.join('');
+
+  document.getElementById('stockBatchList').innerHTML = batches.length ? batches.map(batch => {
+    const days = daysUntilDate(batch.expiry, today);
+    const expiryLabel = days < 0 ? `Expired ${Math.abs(days)} day${days === -1 ? '' : 's'} ago`
+      : days === 0 ? 'Expires today'
+      : days <= 30 ? `Expires in ${days} day${days === 1 ? '' : 's'}`
+      : `Expires ${batch.expiry}`;
+    const state = days < 0 ? 'expired' : days <= 30 ? 'soon' : '';
+    return `<div class="stock-batch-row">
+      <div class="stock-batch-info"><strong>${escapeHtml(batch.medicine)}</strong><span>${escapeHtml(String(batch.units))} units · ${escapeHtml(expiryLabel)}</span></div>
+      <span class="stock-expiry-state ${state}">${days < 0 ? 'Expired' : days <= 30 ? 'Check soon' : 'In date'}</span>
+      <button type="button" class="dose-remove-button" data-remove-stock="${escapeHtml(batch.id)}" aria-label="Remove ${escapeHtml(batch.medicine)} stock batch">Remove</button>
+    </div>`;
+  }).join('') : '<p class="tracker-empty">No medicine batches recorded yet.</p>';
+}
+function renderRefillForecasts(data){
+  const today = localDateKey(new Date());
+  const dailyUnits = getDailyUnitsByMedicine(data.schedules);
+  const medicines = [...new Set([
+    ...data.stockBatches.map(batch => batch.medicine.trim()),
+    ...data.schedules.filter(schedule => !schedule.archivedAt).map(schedule => schedule.medicine.trim()),
+  ])].sort((a, b) => a.localeCompare(b));
+  const forecastList = document.getElementById('refillForecastList');
+  if(!medicines.length){
+    forecastList.innerHTML = '<p class="tracker-empty">Add a dose schedule and stock batch to see a refill estimate.</p>';
+    return;
+  }
+
+  forecastList.innerHTML = medicines.map(medicine => {
+    const key = medicine.toLowerCase();
+    const dailyUsage = dailyUnits[key] || 0;
+    const batches = data.stockBatches.filter(batch => batch.medicine.trim().toLowerCase() === key && batch.expiry >= today);
+    const stockUnits = batches.reduce((total, batch) => total + Number(batch.units), 0);
+    let estimate = dailyUsage
+      ? 'No unexpired stock recorded. Check the expired-batch warning above.'
+      : 'Add a daily dose schedule to estimate remaining supply.';
+    let warning = '';
+    let refillButton = '';
+
+    if(dailyUsage > 0 && stockUnits > 0){
+      const daysLeft = Math.floor(stockUnits / dailyUsage);
+      const runout = new Date();
+      runout.setHours(0, 0, 0, 0);
+      runout.setDate(runout.getDate() + daysLeft);
+      estimate = `About ${daysLeft} day${daysLeft === 1 ? '' : 's'} left (${stockUnits} unexpired units at ${dailyUsage} units per day). Estimated run-out: ${runout.toLocaleDateString()}.`;
+      const earliestExpiry = batches.reduce((date, batch) => batch.expiry < date ? batch.expiry : date, batches[0].expiry);
+      if(earliestExpiry < localDateKey(runout)){
+        warning = '<span class="refill-warning">Some stock expires before this estimate; usable supply may be lower.</span>';
+      }
+      refillButton = `<button type="button" class="dose-status-button" data-prefill-refill="${escapeHtml(medicine)}" data-refill-units="${Math.ceil(dailyUsage * 30)}">Prefill 30-day estimate</button>`;
+    }
+    return `<div class="refill-forecast-row">
+      <div class="refill-forecast-info"><strong>${escapeHtml(medicine)}</strong><span>${escapeHtml(estimate)}</span>${warning}</div>
+      ${refillButton}
     </div>`;
   }).join('');
 }
@@ -289,6 +378,8 @@ function renderDashboard(){
     `<span><i class="severity-key ${severity}"></i>${severityNames[severity]} <strong>${severityCounts[severity]}</strong></span>`
   ).join('') : '<span>No checks recorded yet.</span>';
   renderDoseSchedules();
+  renderStockBatches(data);
+  renderRefillForecasts(data);
 }
 
 document.getElementById('doseScheduleForm').addEventListener('submit', event => {
@@ -296,7 +387,11 @@ document.getElementById('doseScheduleForm').addEventListener('submit', event => 
   const form = event.currentTarget;
   const medicine = form.elements.medicine.value.trim();
   const time = form.elements.time.value;
-  if(!medicine || !time) return;
+  const unitsPerDose = Number(form.elements.unitsPerDose.value);
+  if(!medicine || !time || !Number.isFinite(unitsPerDose) || unitsPerDose <= 0 || unitsPerDose > 100){
+    toast('Enter a medicine, dose time, and valid prescribed units per dose.', 'error');
+    return;
+  }
 
   const data = readDoseData();
   if(data.schedules.some(schedule => !schedule.archivedAt && schedule.medicine.toLowerCase() === medicine.toLowerCase() && schedule.time === time)){
@@ -307,10 +402,12 @@ document.getElementById('doseScheduleForm').addEventListener('submit', event => 
     id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     medicine,
     time,
+    unitsPerDose,
     createdAt: new Date().toISOString(),
   });
   if(!saveDoseData(data)) return;
   form.reset();
+  form.elements.unitsPerDose.value = '1';
   renderDashboard();
   toast('Daily dose added.', 'success');
 });
@@ -331,6 +428,53 @@ doseScheduleList.addEventListener('click', event => {
     schedule.archivedAt = new Date().toISOString();
     if(saveDoseData(data)) renderDashboard();
   }
+});
+
+document.getElementById('stockBatchForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const medicine = form.elements.medicine.value.trim();
+  const units = Number(form.elements.units.value);
+  const expiry = form.elements.expiry.value;
+  if(!medicine || !Number.isInteger(units) || units < 1 || units > 100000 || !/^\d{4}-\d{2}-\d{2}$/.test(expiry)){
+    toast('Enter a medicine, a whole-number stock quantity, and a valid expiry date.', 'error');
+    return;
+  }
+
+  const data = readDoseData();
+  data.stockBatches.push({
+    id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    medicine,
+    units,
+    expiry,
+    createdAt: new Date().toISOString(),
+  });
+  if(!saveDoseData(data)) return;
+  form.reset();
+  renderDashboard();
+  toast('Medicine batch added.', 'success');
+});
+
+document.getElementById('stockBatchList').addEventListener('click', event => {
+  const button = event.target.closest('[data-remove-stock]');
+  if(!button) return;
+  const data = readDoseData();
+  const index = data.stockBatches.findIndex(batch => batch.id === button.dataset.removeStock);
+  if(index < 0) return;
+  data.stockBatches.splice(index, 1);
+  if(saveDoseData(data)) renderDashboard();
+});
+
+document.getElementById('refillForecastList').addEventListener('click', event => {
+  const button = event.target.closest('[data-prefill-refill]');
+  if(!button) return;
+  const medicineField = document.querySelector('#deliveryForm [name="medicine"]');
+  const quantityField = document.querySelector('#deliveryForm [name="quantity"]');
+  medicineField.value = button.dataset.prefillRefill;
+  quantityField.value = button.dataset.refillUnits;
+  document.querySelector('.nav-item[data-page="delivery"]').click();
+  medicineField.focus();
+  toast('Added an editable 30-day estimate. Confirm the medicine and quantity with your pharmacist before ordering.', 'info');
 });
 
 const specialistGuidance = {

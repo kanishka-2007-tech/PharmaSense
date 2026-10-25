@@ -33,7 +33,9 @@ especially in rural areas with fewer pharmacists per capita.
   an emergency warning and a clear non-diagnostic disclaimer
 - **Dashboard with charts** — seven-day medication adherence tracking, total
   interaction-check counts, and recent check-result severity summaries. Dose
-  schedules and check totals are stored locally in this browser.
+  schedules, medicine stock batches, expiry dates, and check totals are stored
+  locally in this browser. Refill estimates use the recorded dose schedule and
+  exclude expired stock.
 
 ## Tech stack
 

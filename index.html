@@ -273,11 +273,29 @@
           <div class="form-grid">
             <label for="doseMedicine">Medicine name<input id="doseMedicine" name="medicine" type="text" maxlength="120" placeholder="e.g. Metformin" required></label>
             <label for="doseTime">Daily dose time<input id="doseTime" name="time" type="time" required></label>
+            <label for="doseUnitsPerDose">Prescribed units per dose<input id="doseUnitsPerDose" name="unitsPerDose" type="number" min="0.01" max="100" step="any" value="1" required></label>
           </div>
           <button class="btn btn-primary" type="submit">Add daily dose</button>
         </form>
         <div class="dose-schedule-list" id="doseScheduleList" aria-live="polite"></div>
-        <p class="form-note">This tracker is for personal record-keeping only. Follow your prescriber’s instructions; it does not recommend or change doses. Your entries are saved in this browser for your account.</p>
+        <p class="form-note">Enter the amount your prescriber instructed for each scheduled dose. The default is 1 unit per dose; check it before relying on the refill estimate. This tracker does not recommend or change doses.</p>
+      </article>
+
+      <article class="dashboard-card medication-tracker">
+        <h3>Home stock &amp; expiry tracker</h3>
+        <p class="dashboard-caption">Track each medicine batch separately. Expired stock is excluded from refill estimates.</p>
+        <form class="service-form tracker-form" id="stockBatchForm">
+          <div class="form-grid">
+            <label for="stockMedicine">Medicine name<input id="stockMedicine" name="medicine" type="text" maxlength="120" placeholder="Use the same name as your dose schedule" required></label>
+            <label for="stockUnits">Units in this batch<input id="stockUnits" name="units" type="number" min="1" max="100000" step="1" placeholder="e.g. 30 tablets" required></label>
+            <label for="stockExpiry">Expiry date<input id="stockExpiry" name="expiry" type="date" required></label>
+          </div>
+          <button class="btn btn-primary" type="submit">Add medicine batch</button>
+        </form>
+        <div id="stockExpiryWarnings" aria-live="polite"></div>
+        <div class="stock-batch-list" id="stockBatchList" aria-live="polite"></div>
+        <div class="refill-forecast-list" id="refillForecastList" aria-live="polite"></div>
+        <p class="form-note">Expiry dates and quantities are entered by you; verify them on the packaging. Do not rely on expired stock. Ask a pharmacist about safe disposal. Refill estimates use your recorded units-per-dose schedule and are not prescribing or ordering advice.</p>
       </article>
     </section>
 
@@ -361,14 +379,14 @@
       <form class="service-form" id="deliveryForm">
         <div class="form-grid">
           <label>Medicine name<input type="text" name="medicine" placeholder="e.g. Dolo" required></label>
-          <label>Quantity<input type="number" name="quantity" min="1" placeholder="e.g. 1" required></label>
+          <label>Quantity (units)<input type="number" name="quantity" min="1" placeholder="e.g. 30 tablets" required></label>
           <label>Phone number<input type="tel" name="phone" placeholder="e.g. 98765 43210" required></label>
           <label>Delivery address<input type="text" name="address" placeholder="House, street, city" required></label>
         </div>
         <label>Prescription (if required)<input type="file" name="prescription" accept="image/*,.pdf"></label>
         <label class="checkbox-label"><input type="checkbox" name="confirm" required> I understand that prescription medicines require a valid prescription and pharmacist confirmation.</label>
         <button class="btn btn-primary" type="submit">Request delivery</button>
-        <p class="form-note">This demo records your request only; connect a pharmacy, payment, and delivery service before using it in production.</p>
+        <p class="form-note">This demo records your request only; connect a pharmacy, payment, and delivery service before using it in production. Confirm medicine, package size, and quantity with your pharmacist before ordering.</p>
       </form>
     </section>
 
