@@ -76,18 +76,31 @@ PharmaSense/
 
 ## Running it locally
 
-No build step needed — but browsers restrict some features (like
-`localStorage` in certain setups) on the raw `file://` protocol, so a tiny
-local server is the safer way to run it:
+The app has no build step or required environment variables. Use a local web
+server instead of opening `index.html` directly, since browsers may restrict
+features such as `localStorage` on the `file://` protocol.
 
-```bash
-cd PharmaSense
-npx serve .
-# or: python3 -m http.server 5500
-```
+1. Install Node.js (for `npx serve`) or Python (for the alternative command).
+2. Open a terminal in the project folder.
+3. Start the server with either command:
 
-Then open the printed local URL, sign up with any name/email/password
-(8+ characters), and start adding medicines.
+   ```bash
+   npx serve .
+   ```
+
+   Or, with Python:
+
+   ```bash
+   py -m http.server 5500
+   ```
+
+4. Open the local URL printed by the server (for Python, visit
+   `http://localhost:5500`).
+5. Sign up with any name, email, and password (8+ characters), then start
+   adding medicines. Stop the server with `Ctrl+C`.
+
+`.env.example` is included as a placeholder; this frontend currently does not
+read environment variables, so you do not need to create a `.env` file.
 
 ## Ideas to extend this further
 
