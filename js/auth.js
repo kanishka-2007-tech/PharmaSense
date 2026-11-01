@@ -1,116 +1,87 @@
-/* =======================================================
-   Client-side auth (DEMO ONLY).
-   Users and sessions live in localStorage so this project runs
-   with zero backend. This is NOT secure — do not reuse this
-   pattern, or a real password, in production. A real build
-   would hash+salt server-side (e.g. bcrypt) and issue a signed
-   session token (e.g. JWT) from an API instead.
-   ======================================================= */
-
-const AUTH_USERS_KEY = "ps_users";
 const AUTH_SESSION_KEY = "ps_session";
 const AUTH_LAST_EMAIL_KEY = "ps_last_email";
 
-// Small non-cryptographic hash — good enough to avoid storing
-// plaintext passwords in a demo, not good enough for real security.
-function demoHash(str){
-  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
-  for (let i = 0; i < str.length; i++){
-    const ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
+async function apiRequest(path, {method = "GET", body} = {}){
+  let response;
+  try{
+    response = await fetch(`/api${path}`, {
+      method,
+      credentials: "same-origin",
+      headers: body === undefined ? {} : {"Content-Type": "application/json"},
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch(error){
+    throw new Error("Cannot reach the PharmaSense server. Start it with `npm start` and try again.");
   }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (h1 >>> 0).toString(16).padStart(8, "0") + (h2 >>> 0).toString(16).padStart(8, "0");
-}
 
-function getUsers(){
-  try{ return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)) || []; }
-  catch(e){ return []; }
-}
-function saveUsers(users){
-  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+  const result = await response.json().catch(() => ({}));
+  if(!response.ok){
+    const error = new Error(result.message || "The request could not be completed.");
+    error.status = response.status;
+    error.field = result.field;
+    throw error;
+  }
+  return result;
 }
 
 function getSession(){
   try{
-    // Keep the login across browser visits. Older builds stored this in
-    // sessionStorage, so migrate an existing session the first time it is read.
-    const stored = localStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_SESSION_KEY);
-    if(!stored) return null;
-
-    const session = JSON.parse(stored);
-    if(!localStorage.getItem(AUTH_SESSION_KEY)){
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
-      sessionStorage.removeItem(AUTH_SESSION_KEY);
-    }
-    return session;
-  } catch(e){ return null; }
+    return JSON.parse(localStorage.getItem(AUTH_SESSION_KEY)) || null;
+  } catch(error){
+    console.error("Could not read the saved account profile.", error);
+    return null;
+  }
 }
 function setSession(session){
   localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
   localStorage.setItem(AUTH_LAST_EMAIL_KEY, session.email);
-  sessionStorage.removeItem(AUTH_SESSION_KEY);
 }
 function getLastLoginEmail(){
   return localStorage.getItem(AUTH_LAST_EMAIL_KEY) || "";
 }
 function clearSession(){
   localStorage.removeItem(AUTH_SESSION_KEY);
-  sessionStorage.removeItem(AUTH_SESSION_KEY);
 }
 
-/**
- * Creates a new account.
- * @returns {{ok:true}|{ok:false, field:string, message:string}}
- */
-function signup({name, email, password}){
-  const users = getUsers();
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if(!name.trim()) return {ok:false, field:"name", message:"Enter your name."};
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))
-    return {ok:false, field:"email", message:"Enter a valid email address."};
-  if(users.some(u => u.email === normalizedEmail))
-    return {ok:false, field:"email", message:"An account with this email already exists."};
-  if(password.length < 8)
-    return {ok:false, field:"password", message:"Password must be at least 8 characters."};
-
-  users.push({
-    name: name.trim(),
-    email: normalizedEmail,
-    passwordHash: demoHash(password),
-    createdAt: new Date().toISOString(),
-  });
-  saveUsers(users);
-  setSession({name: name.trim(), email: normalizedEmail, loginAt: new Date().toISOString()});
-  return {ok:true};
+async function signup({name, email, password}){
+  try{
+    const {user} = await apiRequest("/auth/signup", {
+      method: "POST",
+      body: {name, email, password},
+    });
+    setSession(user);
+    return {ok: true};
+  } catch(error){
+    if(error.field) return {ok: false, field: error.field, message: error.message};
+    throw error;
+  }
 }
 
-/**
- * Logs an existing user in.
- * @returns {{ok:true}|{ok:false, field:string, message:string}}
- */
-function login({email, password}){
-  const users = getUsers();
-  const normalizedEmail = email.trim().toLowerCase();
-  const user = users.find(u => u.email === normalizedEmail);
-
-  if(!user) return {ok:false, field:"email", message:"No account found with this email."};
-  if(user.passwordHash !== demoHash(password))
-    return {ok:false, field:"password", message:"Incorrect password."};
-
-  setSession({name: user.name, email: user.email, loginAt: new Date().toISOString()});
-  return {ok:true};
+async function login({email, password}){
+  try{
+    const {user} = await apiRequest("/auth/login", {
+      method: "POST",
+      body: {email, password},
+    });
+    setSession(user);
+    return {ok: true};
+  } catch(error){
+    if(error.field) return {ok: false, field: error.field, message: error.message};
+    throw error;
+  }
 }
 
-function logout(){
-  clearSession();
-  window.location.href = "login.html";
+async function logout(){
+  try{
+    await apiRequest("/auth/logout", {method: "POST"});
+  } catch(error){
+    console.error("Could not end the server session.", error);
+  } finally{
+    clearSession();
+    window.location.href = "login.html";
+  }
 }
 
-/** Redirects to login if there's no active session. Call at the top of protected pages. */
 function requireAuth(){
   const session = getSession();
   if(!session){
@@ -120,13 +91,20 @@ function requireAuth(){
   return session;
 }
 
-/** Redirects away from auth pages if the user is already signed in. */
-function redirectIfAuthed(){
-  if(getSession()){
+async function redirectIfAuthed(){
+  try{
+    const {user} = await apiRequest("/auth/session");
+    setSession(user);
     window.location.href = "index.html";
+  } catch(error){
+    if(error.status === 401){
+      clearSession();
+      return;
+    }
+    console.error("Could not verify the saved server session.", error);
   }
 }
 
 function initials(name){
-  return name.trim().split(/\s+/).map(p => p[0]).slice(0,2).join("").toUpperCase();
+  return name.trim().split(/\s+/).map(part => part[0]).slice(0, 2).join("").toUpperCase();
 }

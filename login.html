@@ -35,7 +35,7 @@
     </div>
 
     <div class="auth-side-note">
-      Built as a portfolio project. Accounts and data on this demo live only in your browser — nothing is sent to a server.
+      Built as a portfolio project. Your account is stored by the local PharmaSense server; no external account service is used.
     </div>
   </div>
 
@@ -116,26 +116,28 @@
     err.classList.add('show');
   }
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearErrors();
 
     submitBtn.classList.add('loading');
     submitBtn.disabled = true;
 
-    setTimeout(() => {
-      const result = login({ email: emailInput.value, password: passwordInput.value });
-
+    try{
+      const result = await login({ email: emailInput.value, password: passwordInput.value });
       if(result.ok){
         toast('Signed in — welcome back!', 'success');
         setTimeout(() => window.location.href = 'index.html', 400);
       } else {
-        submitBtn.classList.remove('loading');
-        submitBtn.disabled = false;
         showError(result.field, result.message);
         document.getElementById(result.field)?.focus();
       }
-    }, 350);
+    } catch(error){
+      toast(error.message, 'error');
+    } finally{
+      submitBtn.classList.remove('loading');
+      submitBtn.disabled = false;
+    }
   });
 </script>
 </body>

@@ -1,0 +1,13 @@
+{
+  "name": "pharmasense",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PharmaSense medicine interaction checker with a local Node.js backend",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

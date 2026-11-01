@@ -818,11 +818,14 @@ document.getElementById('dismissWelcome')?.addEventListener('click', () => {
 // ---------- history (per user, persisted) ----------
 const HISTORY_KEY = `ps_history_${session.email}`;
 const CHECK_COUNT_KEY = `ps_check_count_${session.email}`;
+let historyLoaded = false;
 function getHistory(){
+  if(!historyLoaded) return [];
   try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
   catch(e){ return []; }
 }
 function getTotalChecks(){
+  if(!historyLoaded) return 0;
   const stored = localStorage.getItem(CHECK_COUNT_KEY);
   if(stored === null){
     const initialCount = getHistory().length;
@@ -832,16 +835,46 @@ function getTotalChecks(){
   const count = Number(stored);
   return Number.isSafeInteger(count) && count >= 0 ? count : getHistory().length;
 }
-function pushHistory(meds, findingsCount, worstSeverity){
-  const totalChecks = getTotalChecks() + 1;
-  const hist = getHistory();
-  hist.unshift({
-    meds, findingsCount, worstSeverity,
-    at: new Date().toISOString(),
-  });
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 8)));
-  localStorage.setItem(CHECK_COUNT_KEY, String(totalChecks));
-  renderHistory();
+async function refreshHistory(){
+  try{
+    const data = await apiRequest('/history');
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(data.items));
+    localStorage.setItem(CHECK_COUNT_KEY, String(data.totalChecks));
+    historyLoaded = true;
+    renderHistory();
+  } catch(error){
+    console.error('Could not load check history from the server.', error);
+    if(error.status === 401){
+      clearSession();
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem(CHECK_COUNT_KEY);
+      window.location.href = 'login.html';
+      return;
+    }
+    toast(error.message, 'error');
+  }
+}
+async function pushHistory(meds, findingsCount, worstSeverity){
+  try{
+    const data = await apiRequest('/history', {
+      method: 'POST',
+      body: {meds, findingsCount, worstSeverity},
+    });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(data.items));
+    localStorage.setItem(CHECK_COUNT_KEY, String(data.totalChecks));
+    historyLoaded = true;
+    renderHistory();
+  } catch(error){
+    console.error('Could not save this check to the server.', error);
+    if(error.status === 401){
+      clearSession();
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem(CHECK_COUNT_KEY);
+      window.location.href = 'login.html';
+      return;
+    }
+    toast('Your check completed, but its history could not be saved. ' + error.message, 'error');
+  }
 }
 function renderHistory(){
   const hist = getHistory();
@@ -855,10 +888,10 @@ function renderHistory(){
       const when = new Date(h.at);
       const timeStr = when.toLocaleDateString(undefined, {month:'short', day:'numeric'}) + ' · ' +
         when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
-      return `<button class="history-item" data-meds='${JSON.stringify(h.meds)}'>
+      return `<button class="history-item" data-meds='${escapeHtml(JSON.stringify(h.meds))}'>
         <span class="history-dot ${dot}"></span>
         <span class="history-text">
-          <span class="history-meds">${h.meds.join(', ')}</span>
+          <span class="history-meds">${h.meds.map(escapeHtml).join(', ')}</span>
           <span class="history-meta">${timeStr} · ${h.findingsCount ? h.findingsCount + ' finding' + (h.findingsCount>1?'s':'') : 'all clear'}</span>
         </span>
       </button>`;
@@ -873,9 +906,9 @@ function renderHistory(){
       const dot = h.worstSeverity === 'danger' ? 'danger' : h.worstSeverity === 'caution' ? 'caution' : 'safe';
       const when = new Date(h.at);
       const timeStr = when.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
-      return `<div class="sidebar-recent-item" data-meds='${JSON.stringify(h.meds)}'>
+      return `<div class="sidebar-recent-item" data-meds='${escapeHtml(JSON.stringify(h.meds))}'>
         <span class="sidebar-recent-dot ${dot}"></span>
-        <span class="sidebar-recent-meds">${h.meds.join(', ')}</span>
+        <span class="sidebar-recent-meds">${h.meds.map(escapeHtml).join(', ')}</span>
         <span class="sidebar-recent-meta">${timeStr}</span>
       </div>`;
     }).join('');
@@ -903,6 +936,7 @@ function loadFromHistory(el){
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 renderHistory();
+refreshHistory();
 
 // ---------- prescription / strip scanner ----------
 function openScanner(){
@@ -1231,11 +1265,11 @@ function renderResults(findings){
   resultsEl.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
-checkBtn.addEventListener('click', () => {
+checkBtn.addEventListener('click', async () => {
   checkBtn.classList.add('loading');
   checkBtn.disabled = true;
 
-  setTimeout(() => {
+  setTimeout(async () => {
     const findings = runCheck();
     renderResults(findings);
     checkBtn.classList.remove('loading');
@@ -1243,7 +1277,7 @@ checkBtn.addEventListener('click', () => {
 
     const worst = findings.some(f => f.severity === 'danger') ? 'danger'
       : findings.some(f => f.severity === 'caution') ? 'caution' : 'safe';
-    pushHistory([...state.added], findings.length, worst);
+    await pushHistory([...state.added], findings.length, worst);
 
     if(findings.some(f => f.severity === 'danger')){
       toast('High-risk interaction found — review before combining', 'error');
