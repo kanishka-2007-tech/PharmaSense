@@ -45,6 +45,7 @@ const welcomeBanner = document.getElementById('welcomeBanner');
 const historyList = document.getElementById('historyList');
 const historyPanel = document.getElementById('historyPanel');
 const fontSizeBtn = document.getElementById('fontSizeBtn');
+const themeToggle = document.getElementById('themeToggle');
 const dashboardSection = document.getElementById('dashboardSection');
 const specialistGuideSection = document.getElementById('specialistGuideSection');
 const consultationSection = document.getElementById('consultationSection');
@@ -796,6 +797,24 @@ if(SpeechRecognition){
 }
 
 // ---------- font size toggle ----------
+function applyTheme(theme){
+  const isDark = theme === 'dark';
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  if(themeToggle){
+    const label = isDark ? 'Switch to light theme' : 'Switch to dark theme';
+    themeToggle.title = label;
+    themeToggle.setAttribute('aria-label', label);
+    themeToggle.setAttribute('aria-pressed', String(isDark));
+  }
+}
+applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+themeToggle?.addEventListener('click', () => {
+  const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('ps_theme', nextTheme);
+  applyTheme(nextTheme);
+  toast(nextTheme === 'dark' ? 'Dark theme enabled' : 'Light theme enabled', 'info');
+});
+
 fontSizeBtn.addEventListener('click', () => {
   document.body.classList.toggle('large-text');
   const isLarge = document.body.classList.contains('large-text');

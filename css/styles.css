@@ -42,6 +42,18 @@
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+html[data-theme="dark"]{
+  color-scheme: dark;
+  --paper: #101820; --paper-line: #26343d; --card: #18232c;
+  --ink: #edf4f3; --ink-soft: #a9b9bd; --ink-faint: #71848a;
+  --border: #2c3c45; --border-strong: #40535e;
+  --primary: #66b6c4; --primary-hover: #8ad0d8; --primary-light: #1c3943;
+  --safe: #65c58a; --safe-bg: #153326; --safe-border: #285e42;
+  --caution: #e5bd5e; --caution-bg: #3a301a; --caution-border: #6d5926;
+  --danger: #ef887a; --danger-bg: #3b211f; --danger-border: #71413b;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.24); --shadow-md: 0 8px 24px rgba(0,0,0,0.25); --shadow-lg: 0 16px 42px rgba(0,0,0,0.35);
+}
+
 *, *::before, *::after{ box-sizing: border-box; }
 html{ scroll-behavior: smooth; }
 
@@ -60,6 +72,10 @@ body{
   line-height: 1.55;
   min-height: 100vh;
   display: flex;
+  transition: background-color .25s var(--ease), color .25s var(--ease);
+}
+html[data-theme="dark"] body{
+  background-image: radial-gradient(circle at 12% 8%, rgba(75,168,150,0.10), transparent 25%), radial-gradient(circle at 88% 82%, rgba(73,143,167,0.10), transparent 28%), linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
 }
 
 body.large-text{ font-size: 17px; }
@@ -369,7 +385,7 @@ a{ color: inherit; text-decoration: none; }
 
 .main-header{
   height: var(--header-h);
-  background: rgba(244,246,243,0.92);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -424,11 +440,25 @@ a{ color: inherit; text-decoration: none; }
 
 .content-area{
   flex: 1;
-  max-width: 860px;
+  max-width: 1120px;
   width: 100%;
   margin: 0 auto;
-  padding: 28px 32px 60px;
+  padding: 34px 40px 72px;
 }
+
+.theme-toggle .theme-icon-moon{ display:none; }
+html[data-theme="dark"] .theme-toggle .theme-icon-sun{ display:none; }
+html[data-theme="dark"] .theme-toggle .theme-icon-moon{ display:block; }
+html[data-theme="dark"] .sidebar{ background:#0b1218; }
+html[data-theme="dark"] .main-header{ background:rgba(16,24,32,.92); }
+html[data-theme="dark"] .note-body, html[data-theme="dark"] .about-card p, html[data-theme="dark"] .specialist-result p{ color:#c0ced0; }
+html[data-theme="dark"] .scanner-panel{ border-color:#315764; }
+html[data-theme="dark"] .scanner-match:hover{ background:var(--primary-light); }
+html[data-theme="dark"] .chatbot-links button:hover{ background:#254c58; }
+
+.content-area > .welcome-banner{ border-left-width:0; border-top:3px solid var(--primary); padding:22px 24px; box-shadow:var(--shadow-md); }
+.content-area > .checker-section, .content-area > .history-section, .content-area > .service-section{ border-radius:14px; box-shadow:var(--shadow-md); }
+.section-header h2{ letter-spacing:-.02em; }
 
 /* =======================================================
    WELCOME BANNER
