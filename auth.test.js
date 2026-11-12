@@ -55,3 +55,33 @@ test("falls back to a browser-only demo account when Vercel has no API route", a
     global.localStorage = savedLocalStorage;
   }
 });
+
+test("falls back when the deployed API returns an internal server error", async () => {
+  const savedFetch = global.fetch;
+  const savedCrypto = global.crypto;
+  const savedLocalStorage = global.localStorage;
+  const storage = new Map();
+  global.crypto = webcrypto;
+  global.localStorage = {
+    getItem: key => storage.get(key) || null,
+    setItem: (key, value) => storage.set(key, String(value)),
+    removeItem: key => storage.delete(key),
+  };
+  global.fetch = async () => new Response("Internal Server Error", {status: 500});
+
+  try{
+    const created = await signup({
+      name: "Demo User",
+      email: "demo@example.com",
+      password: "example-passphrase",
+    });
+    assert.deepEqual(created, {ok: true, localOnly: true});
+    clearSession();
+    const signedIn = await login({email: "demo@example.com", password: "example-passphrase"});
+    assert.deepEqual(signedIn, {ok: true, localOnly: true});
+  } finally{
+    global.fetch = savedFetch;
+    global.crypto = savedCrypto;
+    global.localStorage = savedLocalStorage;
+  }
+});

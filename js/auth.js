@@ -149,6 +149,13 @@ async function apiRequest(path, {method = "GET", body} = {}){
   return result;
 }
 
+function shouldUseLocalFallback(error){
+  // A deployed static demo can return a plain 500 page when its API function
+  // is unavailable. Treat all server-side failures like the other unavailable
+  // API statuses so sign-in can still use the browser-only demo account.
+  return !error.status || error.status >= 500;
+}
+
 function getSession(){
   try{
     return JSON.parse(localStorage.getItem(AUTH_SESSION_KEY)) || null;
@@ -174,7 +181,7 @@ async function signup({name, email, password}){
     setSession(user);
     return {ok: true};
   } catch(error){
-    if(!error.status || error.status === 404 || error.status === 502 || error.status === 503 || error.status === 504){
+    if(shouldUseLocalFallback(error) || error.status === 404){
       return localSignup({name, email, password});
     }
     if(error.field) return {ok: false, field: error.field, message: error.message};
@@ -192,7 +199,7 @@ async function login({email, password}){
     setSession(user);
     return {ok: true};
   } catch(error){
-    if(!error.status || error.status === 404 || error.status === 502 || error.status === 503 || error.status === 504){
+    if(shouldUseLocalFallback(error) || error.status === 404){
       return localLogin({email, password});
     }
     if(error.field) return {ok: false, field: error.field, message: error.message};
