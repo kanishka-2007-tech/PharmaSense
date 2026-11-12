@@ -336,4 +336,11 @@ if(require.main === module){
   });
 }
 
-module.exports = {createServer};
+module.exports = {
+  createServer,
+  hashPassword,
+  publicUser,
+  sessionCookie,
+  validateCredentials,
+  verifyPassword,
+};

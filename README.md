@@ -13,17 +13,18 @@ interactions and explains why each one matters in plain language.
 
 ## Technology
 
-The frontend is plain HTML, CSS, and JavaScript. The dependency-free Node.js
-backend serves the app and provides account, session, and history APIs.
+The frontend is plain HTML, CSS, and JavaScript. The Node.js backend serves the
+app and provides account, session, and history APIs.
 
 - Passwords are hashed server-side with Node.js `scrypt`.
 - Sessions use HttpOnly cookies.
-- Account and check-history data are stored in `data/store.json` by default.
+- Local account and check-history data are stored in `data/store.json`.
+- Vercel deployments use a Neon Postgres database for account and history data.
 - Dose schedules and home-stock tracking remain in browser storage.
 
 ## Run locally
 
-1. Install Node.js 18 or newer.
+1. Install Node.js 20 or newer.
 2. In the repository folder, run:
 
    ```bash
@@ -33,7 +34,8 @@ backend serves the app and provides account, session, and history APIs.
 3. Open **http://localhost:3000**, create an account, and use the app.
    Stop the server with `Ctrl+C`.
 
-No packages or `.env` file are required. The server has portable defaults:
+The local server has portable defaults and does not require a database or
+`.env` file:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -43,11 +45,26 @@ No packages or `.env` file are required. The server has portable defaults:
 | `SESSION_TTL_DAYS` | `7` | Session lifetime |
 
 Copy `.env.example` to `.env` only if you want to override these settings.
-Existing process environment variables take precedence. For deployment, use a
-persistent `DATA_DIR` and set `NODE_ENV=production` when serving through HTTPS;
-production sessions then use the `Secure` cookie attribute. Serve the app from
-this backend rather than opening its HTML files directly or using a static-only
-server.
+Existing process environment variables take precedence. The JSON-file backend
+is intended for local development and demos, not multi-instance hosting.
+
+## Deploy to Vercel
+
+The Vercel deployment serves the static frontend and routes `/api/*` to a
+serverless function backed by Neon Postgres. Before deploying:
+
+1. Create a Neon Postgres project and copy its connection string.
+2. In Vercel project settings, add `DATABASE_URL` with that connection string
+   for each environment you deploy (Production, Preview, and/or Development).
+   The database role must be allowed to create tables and indexes; PharmaSense
+   initializes its schema automatically on the first API request.
+3. Redeploy the project. Vercel detects the `api/[...path].js` function
+   automatically.
+
+`SESSION_TTL_DAYS` is optional and defaults to `7`. Set it in Vercel to override
+the session lifetime. Production sessions use the `Secure` cookie attribute.
+Accounts from local `data/store.json` are not migrated; create a new account
+after deployment.
 
 Accounts from the previous browser-only demo are not imported; create a new
 account on the backend. Dose and stock-tracker entries remain in browser
@@ -67,7 +84,9 @@ may be incomplete, and is not a substitute for a doctor or pharmacist.
 ```text
 PharmaSense/
 ├── server.js           # Static file server and auth/history API
-├── package.json        # Start and test commands; no external packages
+├── api/
+│   └── [...path].js    # Vercel serverless API backed by Neon Postgres
+├── package.json        # Start and test commands
 ├── .env.example        # Portable optional settings
 ├── index.html          # Main interaction checker
 ├── login.html
@@ -79,5 +98,6 @@ PharmaSense/
 │   ├── app.js          # Checker, dashboard, and history UI
 │   └── toast.js
 ├── assets/
-└── server.test.js      # Backend integration tests
+├── server.test.js      # Local backend integration tests
+└── vercel.test.js      # Vercel API configuration test
 ```
