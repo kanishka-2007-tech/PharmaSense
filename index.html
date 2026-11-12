@@ -370,20 +370,22 @@
     </section>
 
     <section class="service-section" id="consultationSection">
-      <div class="section-header">
-        <h2>Doctor Consultation</h2>
-        <p>Request a call from a qualified doctor about your medicines or symptoms.</p>
-      </div>
+      <div class="consultation-hero"><div><span class="consultation-kicker">Book a trusted specialist</span><h2>Choose your doctor and time</h2><p>Get a focused consultation about medicines, symptoms, or treatment questions.</p></div><div class="consultation-hero-badge">15–30<br><small>min visit</small></div></div>
       <form class="service-form" id="consultationForm">
+        <div class="consultation-block"><div class="consultation-heading"><div><h3>1. Select a specialist</h3><p>Choose the doctor best suited to your concern.</p></div><span class="consultation-step">Step 1</span></div><div class="doctor-grid"><label class="doctor-card"><input type="radio" name="doctor" value="Dr. Aditi Sharma" checked><span class="doctor-avatar">AS</span><span><strong>Dr. Aditi Sharma</strong><small>General Physician · 12 yrs exp.</small><em>Medicines &amp; everyday concerns</em></span><b>₹499</b></label><label class="doctor-card"><input type="radio" name="doctor" value="Dr. Rohan Mehta"><span class="doctor-avatar doctor-avatar-blue">RM</span><span><strong>Dr. Rohan Mehta</strong><small>Cardiologist · 15 yrs exp.</small><em>Heart &amp; blood pressure</em></span><b>₹799</b></label><label class="doctor-card"><input type="radio" name="doctor" value="Dr. Neha Kapoor"><span class="doctor-avatar doctor-avatar-purple">NK</span><span><strong>Dr. Neha Kapoor</strong><small>Dermatologist · 10 yrs exp.</small><em>Skin, hair &amp; allergies</em></span><b>₹699</b></label></div></div>
+        <div class="consultation-block"><div class="consultation-heading"><div><h3>2. Choose date and time</h3><p>Available slots update for your selected date.</p></div><span class="consultation-step">Step 2</span></div>
         <div class="form-grid">
           <label>Full name<input type="text" name="name" placeholder="e.g. Aditi Sharma" required></label>
           <label>Phone number<input type="tel" name="phone" placeholder="e.g. 98765 43210" required></label>
           <label>Preferred date<input type="date" name="date" required></label>
           <label>Preferred time<select name="time" required><option value="">Choose a time</option><option>9:00 AM – 12:00 PM</option><option>12:00 PM – 3:00 PM</option><option>3:00 PM – 6:00 PM</option><option>6:00 PM – 9:00 PM</option></select></label>
         </div>
+        <div class="slot-picker"><span>Quick slot selection</span><div><button type="button" data-consultation-slot="9:00 AM – 12:00 PM">09:00 AM</button><button type="button" data-consultation-slot="12:00 PM – 3:00 PM">12:00 PM</button><button type="button" data-consultation-slot="3:00 PM – 6:00 PM">03:00 PM</button><button type="button" data-consultation-slot="6:00 PM – 9:00 PM">06:00 PM</button></div></div></div>
+        <div class="consultation-block"><div class="consultation-heading"><div><h3>3. Tell us what you need help with</h3><p>This helps the specialist prepare for your consultation.</p></div><span class="consultation-step">Step 3</span></div>
         <label>How can the doctor help?<textarea name="concern" rows="4" placeholder="Tell us briefly about your concern or medicines..." required></textarea></label>
+        <div class="consultation-mode"><span>Consultation mode</span><label><input type="radio" name="mode" value="video" checked> Video call</label><label><input type="radio" name="mode" value="phone"> Phone call</label></div></div>
         <button class="btn btn-primary" type="submit">Request consultation</button>
-        <p class="form-note">This request form does not provide emergency care. Call your local emergency number for urgent symptoms.</p>
+        <p class="form-note">Your slot is confirmed after availability is checked. This service does not provide emergency care; call your local emergency number for urgent symptoms.</p>
       </form>
     </section>
 

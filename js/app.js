@@ -624,6 +624,10 @@ const chatbotMic = document.getElementById('chatbotMic');
 const chatbotStatus = document.getElementById('chatbotStatus');
 const consultationForm = document.getElementById('consultationForm');
 const consultationTimes = [...consultationForm.elements.time.options].slice(1).map(option => option.value);
+document.querySelectorAll('[data-consultation-slot]').forEach(button => button.addEventListener('click', () => {
+  consultationForm.elements.time.value = button.dataset.consultationSlot;
+  document.querySelectorAll('[data-consultation-slot]').forEach(slot => slot.classList.toggle('selected', slot === button));
+}));
 function setChatbotOpen(isOpen){
   chatbotPanel.classList.toggle('open', isOpen);
   chatbotPanel.setAttribute('aria-hidden', String(!isOpen));
