@@ -171,10 +171,19 @@
       <div class="scanner-panel" id="scannerPanel" hidden>
         <div class="scanner-panel-head">
           <div>
-            <strong>Read medicine from a photo</strong>
-            <p>We will read the label, then ask you to confirm the match.</p>
+            <strong>Scan your medicine or prescription</strong>
+            <p>Allow camera access, then capture a clear photo of the label or prescription.</p>
           </div>
           <button class="scanner-close" id="scannerClose" type="button" aria-label="Close scanner">&times;</button>
+        </div>
+        <div class="scanner-camera" id="scannerCamera" hidden>
+          <video id="scannerVideo" autoplay playsinline muted aria-label="Live camera preview"></video>
+          <canvas id="scannerCanvas" hidden></canvas>
+          <button class="btn btn-primary scanner-capture" id="scannerCapture" type="button">Capture photo</button>
+        </div>
+        <div class="scanner-options">
+          <span>or</span>
+          <button class="scanner-upload" id="scannerUpload" type="button">Upload a medicine prescription</button>
         </div>
         <div class="scanner-preview-wrap" id="scannerPreviewWrap" hidden>
           <img id="scannerPreview" alt="Selected medicine image preview">

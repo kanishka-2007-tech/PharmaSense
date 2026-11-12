@@ -54,6 +54,11 @@ const scanMedicineBtn = document.getElementById('scanMedicineBtn');
 const medicineImageInput = document.getElementById('medicineImageInput');
 const scannerPanel = document.getElementById('scannerPanel');
 const scannerClose = document.getElementById('scannerClose');
+const scannerCamera = document.getElementById('scannerCamera');
+const scannerVideo = document.getElementById('scannerVideo');
+const scannerCanvas = document.getElementById('scannerCanvas');
+const scannerCapture = document.getElementById('scannerCapture');
+const scannerUpload = document.getElementById('scannerUpload');
 const scannerPreviewWrap = document.getElementById('scannerPreviewWrap');
 const scannerPreview = document.getElementById('scannerPreview');
 const scannerStatus = document.getElementById('scannerStatus');
@@ -958,12 +963,33 @@ renderHistory();
 refreshHistory();
 
 // ---------- prescription / strip scanner ----------
-function openScanner(){
+let scannerStream = null;
+function stopScannerCamera(){
+  scannerStream?.getTracks().forEach(track => track.stop());
+  scannerStream = null;
+  if(scannerVideo) scannerVideo.srcObject = null;
+  if(scannerCamera) scannerCamera.hidden = true;
+}
+async function openScanner(){
   scannerPanel.hidden = false;
-  scannerStatus.textContent = window.Tesseract ? 'Choose a clear, well-lit photo.' : 'Scanner is unavailable offline. Use the search box instead.';
+  scannerStatus.textContent = window.Tesseract ? 'Requesting camera access...' : 'OCR is unavailable offline. Use the search box instead.';
   scannerPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  if(!navigator.mediaDevices?.getUserMedia){
+    scannerStatus.textContent = 'Camera access is unavailable here. Upload a clear medicine prescription instead.';
+    return;
+  }
+  try{
+    scannerStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}}, audio: false});
+    scannerVideo.srcObject = scannerStream;
+    scannerCamera.hidden = false;
+    scannerStatus.textContent = 'Camera ready. Point it at the medicine label or prescription.';
+  } catch(error){
+    scannerStatus.textContent = 'Camera access was not granted. Upload a clear medicine prescription instead.';
+    scannerCamera.hidden = true;
+  }
 }
 function resetScanner(){
+  stopScannerCamera();
   scannerPanel.hidden = true;
   medicineImageInput.value = '';
   scannerPreview.removeAttribute('src');
@@ -973,12 +999,22 @@ function resetScanner(){
   scannerMatches.hidden = true;
   scannerMatchList.innerHTML = '';
 }
-scanMedicineBtn.addEventListener('click', () => { openScanner(); medicineImageInput.click(); });
+scanMedicineBtn.addEventListener('click', () => { openScanner(); });
 scannerClose.addEventListener('click', resetScanner);
 scannerSearchFallback.addEventListener('click', () => { resetScanner(); searchInput.focus(); });
+scannerUpload.addEventListener('click', () => medicineImageInput.click());
+scannerCapture.addEventListener('click', () => {
+  if(!scannerStream || !scannerVideo.videoWidth) return;
+  scannerCanvas.width = scannerVideo.videoWidth;
+  scannerCanvas.height = scannerVideo.videoHeight;
+  scannerCanvas.getContext('2d').drawImage(scannerVideo, 0, 0);
+  scannerCanvas.toBlob(blob => {
+    if(blob) scanMedicineImage(new File([blob], 'medicine-camera-capture.jpg', {type: 'image/jpeg'}));
+  }, 'image/jpeg', 0.92);
+});
 medicineImageInput.addEventListener('change', e => {
   const file = e.target.files?.[0];
-  if(file) scanMedicineImage(file);
+  if(file){ stopScannerCamera(); scanMedicineImage(file); }
 });
 
 function normalizeOcr(value){
