@@ -47,7 +47,6 @@ const historyPanel = document.getElementById('historyPanel');
 const fontSizeBtn = document.getElementById('fontSizeBtn');
 const themeToggle = document.getElementById('themeToggle');
 const dashboardSection = document.getElementById('dashboardSection');
-const specialistGuideSection = document.getElementById('specialistGuideSection');
 const consultationSection = document.getElementById('consultationSection');
 const deliverySection = document.getElementById('deliverySection');
 const scanMedicineBtn = document.getElementById('scanMedicineBtn');
@@ -102,7 +101,6 @@ navItems.forEach(item => {
     const page = item.dataset.page;
     dashboardSection.classList.toggle('visible', page === 'dashboard');
     aboutSection.classList.toggle('visible', page === 'about');
-    specialistGuideSection.classList.toggle('visible', page === 'specialist-guide');
     consultationSection.classList.toggle('visible', page === 'consultation');
     deliverySection.classList.toggle('visible', page === 'delivery');
     if(page === 'dashboard') renderDashboard();
@@ -122,6 +120,55 @@ function handleServiceRequest(form, message){
 }
 handleServiceRequest(document.getElementById('consultationForm'), () => t('consultationReceived'));
 handleServiceRequest(document.getElementById('deliveryForm'), () => t('deliveryReceived'));
+
+// ---------- delivery cart ----------
+const deliveryCart = [];
+const deliveryCartItems = document.getElementById('deliveryCartItems');
+const deliveryCartCount = document.getElementById('deliveryCartCount');
+const deliveryCartSummary = document.getElementById('deliveryCartSummary');
+const deliveryCartTotal = document.getElementById('deliveryCartTotal');
+const deliveryMedicine = document.getElementById('deliveryMedicine');
+const deliveryQuantity = document.getElementById('deliveryQuantity');
+function renderDeliveryCart(){
+  const totalUnits = deliveryCart.reduce((sum, item) => sum + item.quantity, 0);
+  deliveryCartCount.textContent = String(deliveryCart.length);
+  deliveryCartSummary.textContent = deliveryCart.length ? `${deliveryCart.length} medicine${deliveryCart.length === 1 ? '' : 's'} ready to order` : 'No medicines added yet';
+  deliveryCartTotal.textContent = `${totalUnits} unit${totalUnits === 1 ? '' : 's'}`;
+  deliveryCartItems.innerHTML = deliveryCart.length ? deliveryCart.map((item, index) => `<div class="delivery-cart-item"><div><strong>${escapeHtml(item.name)}</strong><small>${item.quantity} units</small></div><div class="cart-quantity"><button type="button" data-cart-action="decrease" data-cart-index="${index}" aria-label="Decrease ${escapeHtml(item.name)}">−</button><span>${item.quantity}</span><button type="button" data-cart-action="increase" data-cart-index="${index}" aria-label="Increase ${escapeHtml(item.name)}">+</button></div></div>`).join('') : '<div class="delivery-cart-empty"><span>🛒</span><strong>Your cart is empty</strong><small>Add a medicine to get started.</small></div>';
+}
+function addToDeliveryCart(name, quantity = 1){
+  const cleanName = name.trim();
+  const cleanQuantity = Math.max(1, Number(quantity) || 1);
+  if(!cleanName) return;
+  const existing = deliveryCart.find(item => item.name.toLowerCase() === cleanName.toLowerCase());
+  if(existing) existing.quantity += cleanQuantity;
+  else deliveryCart.push({name: cleanName, quantity: cleanQuantity});
+  deliveryMedicine.value = deliveryCart.map(item => item.name).join(', ');
+  deliveryQuantity.value = deliveryCart.reduce((sum, item) => sum + item.quantity, 0);
+  renderDeliveryCart();
+  toast(`${cleanName} added to your cart.`, 'success');
+}
+document.querySelectorAll('[data-add-medicine]').forEach(button => button.addEventListener('click', () => addToDeliveryCart(button.dataset.addMedicine, button.dataset.addQuantity)));
+document.getElementById('addCustomMedicine').addEventListener('click', () => {
+  const field = document.getElementById('deliveryMedicineSearch');
+  if(!field.value.trim()){ field.focus(); return; }
+  addToDeliveryCart(field.value, 1);
+  field.value = '';
+});
+deliveryCartItems.addEventListener('click', event => {
+  const button = event.target.closest('[data-cart-action]');
+  if(!button) return;
+  const index = Number(button.dataset.cartIndex);
+  const item = deliveryCart[index];
+  if(!item) return;
+  if(button.dataset.cartAction === 'increase') item.quantity++;
+  else item.quantity--;
+  if(item.quantity <= 0) deliveryCart.splice(index, 1);
+  deliveryMedicine.value = deliveryCart.map(cartItem => cartItem.name).join(', ');
+  deliveryQuantity.value = deliveryCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0) || '';
+  renderDeliveryCart();
+});
+renderDeliveryCart();
 
 // ---------- dashboard and dose tracking ----------
 const doseStorageKey = `ps_dose_tracker_${session.email}`;
@@ -476,8 +523,7 @@ document.getElementById('refillForecastList').addEventListener('click', event =>
   if(!button) return;
   const medicineField = document.querySelector('#deliveryForm [name="medicine"]');
   const quantityField = document.querySelector('#deliveryForm [name="quantity"]');
-  medicineField.value = button.dataset.prefillRefill;
-  quantityField.value = button.dataset.refillUnits;
+  addToDeliveryCart(button.dataset.prefillRefill, button.dataset.refillUnits);
   document.querySelector('.nav-item[data-page="delivery"]').click();
   medicineField.focus();
   toast('Added an editable 30-day estimate. Confirm the medicine and quantity with your pharmacist before ordering.', 'info');
@@ -727,6 +773,11 @@ function answerChatbot(rawText){
     return;
   }
   const lower = text.toLowerCase();
+
+  if(/\b(specialist|which doctor|what kind of doctor|doctor for|symptom guide)\b/.test(lower)){
+    startConsultationFlow(text);
+    return;
+  }
 
   if(/\b(specialist|which doctor|what kind of doctor|doctor for|symptom guide)\b/.test(lower)){
     navigateFromChat('specialist-guide', 'I’m opening the symptom-to-specialist guide. It offers general starting points, not a diagnosis.', text);

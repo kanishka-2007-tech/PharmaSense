@@ -50,10 +50,6 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       <span>About &amp; Help</span>
     </a>
-    <a href="#specialistGuideSection" class="nav-item" data-page="specialist-guide">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5c0 5-8.5 12-8.5 12s-8.5-7-8.5-12a4.5 4.5 0 0 1 8.5-2.4 4.5 4.5 0 0 1 8.5 2.4Z"/><path d="M8 11h2l1-2 2 4 1-2h2"/></svg>
-      <span>Symptom Guide</span>
-    </a>
     <a href="#consultationSection" class="nav-item" data-page="consultation">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-4.1-1.05L3 20l1.05-3.9A8.5 8.5 0 1 1 20 11.5z"/><path d="M8 12h8M12 8v8"/></svg>
       <span>Doctor Consultation</span>
@@ -334,7 +330,7 @@
       </div>
     </section>
 
-    <section class="service-section" id="specialistGuideSection">
+    <section class="service-section" id="specialistGuideSection" hidden aria-hidden="true">
       <div class="section-header">
         <h2>Symptom-to-Specialist Guide</h2>
         <p>Choose the area of concern to see which kind of clinician may be a reasonable first contact.</p>
@@ -392,20 +388,34 @@
     </section>
 
     <section class="service-section" id="deliverySection">
-      <div class="section-header">
-        <h2>Medicine Delivery</h2>
-        <p>Request delivery when you are running low. Availability and prescription requirements will be confirmed before dispatch.</p>
+      <div class="delivery-hero">
+        <div><span class="delivery-kicker">PharmaSense QuickCare</span><h2>Medicines delivered to your door</h2><p>Order regular medicines in a few simple steps. A pharmacist will confirm availability and prescription requirements before dispatch.</p><div class="delivery-trust"><span>✓ Verified pharmacy check</span><span>✓ Same-day slots</span><span>✓ Secure prescription review</span></div></div>
+        <div class="delivery-hero-art" aria-hidden="true">＋<span>Rx</span></div>
       </div>
+      <div class="delivery-layout">
+        <div class="delivery-catalog">
+          <div class="delivery-section-heading"><div><h3>Start with a medicine</h3><p>Choose a popular item or enter another medicine below.</p></div><span class="delivery-step">1 of 2</span></div>
+          <div class="medicine-quick-grid">
+            <button type="button" class="medicine-quick-card" data-add-medicine="Paracetamol" data-add-quantity="10"><span class="medicine-quick-icon">◉</span><strong>Paracetamol</strong><small>Fever &amp; pain relief</small><em>Add</em></button>
+            <button type="button" class="medicine-quick-card" data-add-medicine="Cetirizine" data-add-quantity="10"><span class="medicine-quick-icon">✦</span><strong>Cetirizine</strong><small>Allergy relief</small><em>Add</em></button>
+            <button type="button" class="medicine-quick-card" data-add-medicine="ORS Sachets" data-add-quantity="5"><span class="medicine-quick-icon">＋</span><strong>ORS Sachets</strong><small>Hydration support</small><em>Add</em></button>
+          </div>
+          <div class="delivery-custom-add"><label>Search or type another medicine<input id="deliveryMedicineSearch" type="text" placeholder="e.g. Dolo, Metformin, Vitamin D" autocomplete="off"></label><button class="btn btn-ghost" id="addCustomMedicine" type="button">Add to cart</button></div>
+          <div class="delivery-safety-note"><span>ⓘ</span><p>Prescription medicines require a valid prescription and pharmacist confirmation. Never start, stop, or change a medicine based only on this order form.</p></div>
+        </div>
+        <aside class="delivery-cart" aria-live="polite"><div class="delivery-section-heading"><div><h3>Your cart</h3><p id="deliveryCartSummary">No medicines added yet</p></div><span class="cart-badge" id="deliveryCartCount">0</span></div><div class="delivery-cart-items" id="deliveryCartItems"><div class="delivery-cart-empty"><span>🛒</span><strong>Your cart is empty</strong><small>Add a medicine to get started.</small></div></div><div class="delivery-cart-total"><span>Items</span><strong id="deliveryCartTotal">0 units</strong></div></aside>
+      </div>
+      <div class="delivery-section-heading"><div><h3>Delivery details</h3><p>Tell us where and how to reach you.</p></div><span class="delivery-step">2 of 2</span></div>
       <form class="service-form" id="deliveryForm">
         <div class="form-grid">
-          <label>Medicine name<input type="text" name="medicine" placeholder="e.g. Dolo" required></label>
-          <label>Quantity (units)<input type="number" name="quantity" min="1" placeholder="e.g. 30 tablets" required></label>
+          <label>Medicine name<input id="deliveryMedicine" type="text" name="medicine" placeholder="Add a medicine above" required></label>
+          <label>Quantity (units)<input id="deliveryQuantity" type="number" name="quantity" min="1" placeholder="e.g. 30" required></label>
           <label>Phone number<input type="tel" name="phone" placeholder="e.g. 98765 43210" required></label>
           <label>Delivery address<input type="text" name="address" placeholder="House, street, city" required></label>
         </div>
         <label>Prescription (if required)<input type="file" name="prescription" accept="image/*,.pdf"></label>
         <label class="checkbox-label"><input type="checkbox" name="confirm" required> I understand that prescription medicines require a valid prescription and pharmacist confirmation.</label>
-        <button class="btn btn-primary" type="submit">Request delivery</button>
+        <button class="btn btn-primary delivery-submit" type="submit"><span>Request delivery</span><span>→</span></button>
         <p class="form-note">This demo records your request only; connect a pharmacy, payment, and delivery service before using it in production. Confirm medicine, package size, and quantity with your pharmacist before ordering.</p>
       </form>
     </section>
@@ -429,7 +439,6 @@
       <div class="chatbot-message chatbot-message-assistant">Hi! I can help you find the interaction checker, request a consultation, or request medicine delivery. You can type or use the microphone.</div>
     </div>
     <div class="chatbot-links">
-      <button data-chat-action="specialist-guide">Find a specialist</button>
       <button data-chat-action="consultation">Book a consultation</button>
       <button data-chat-action="delivery">Request delivery</button>
       <button data-chat-action="checker">Check interactions</button>
