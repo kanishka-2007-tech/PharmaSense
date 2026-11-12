@@ -159,7 +159,9 @@
         password: passwordInput.value,
       });
       if(result.ok){
-        toast('Account created — welcome!', 'success');
+        toast(result.localOnly
+          ? 'Account created on this browser only. It will not sync to other devices.'
+          : 'Account created — welcome!', 'success');
         setTimeout(() => window.location.href = 'index.html', 500);
       } else {
         showError(result.field, result.message);

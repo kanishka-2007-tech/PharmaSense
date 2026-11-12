@@ -48,6 +48,12 @@ Copy `.env.example` to `.env` only if you want to override these settings.
 Existing process environment variables take precedence. The JSON-file backend
 is intended for local development and demos, not multi-instance hosting.
 
+If the hosted API is unavailable, the sign-up and sign-in pages fall back to a
+browser-only demo account. Passwords are PBKDF2-hashed before being stored in
+that browser, and check history stays in the same browser. This fallback does
+not sync across browsers or devices; use the Vercel/Neon setup below for
+server-backed accounts.
+
 ## Deploy to Vercel
 
 The Vercel deployment serves the static frontend and routes `/api/*` to a
@@ -98,6 +104,7 @@ PharmaSense/
 │   ├── app.js          # Checker, dashboard, and history UI
 │   └── toast.js
 ├── assets/
+├── auth.test.js        # Browser-only account fallback tests
 ├── server.test.js      # Local backend integration tests
 └── vercel.test.js      # Vercel API configuration test
 ```

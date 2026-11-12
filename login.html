@@ -126,7 +126,9 @@
     try{
       const result = await login({ email: emailInput.value, password: passwordInput.value });
       if(result.ok){
-        toast('Signed in — welcome back!', 'success');
+        toast(result.localOnly
+          ? 'Signed in with this browser’s local demo account.'
+          : 'Signed in — welcome back!', 'success');
         setTimeout(() => window.location.href = 'index.html', 400);
       } else {
         showError(result.field, result.message);
